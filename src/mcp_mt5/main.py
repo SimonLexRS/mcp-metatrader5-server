@@ -199,9 +199,57 @@ class Deal(BaseModel):
     comment: str
     external_id: str
 
+timeframe_map = {
+    # Minutes
+    1: mt5.TIMEFRAME_M1,      # 1 minute
+    2: mt5.TIMEFRAME_M2,      # 2 minutes
+    3: mt5.TIMEFRAME_M3,      # 3 minutes
+    4: mt5.TIMEFRAME_M4,      # 4 minutes
+    5: mt5.TIMEFRAME_M5,      # 5 minutes
+    6: mt5.TIMEFRAME_M6,      # 6 minutes
+    10: mt5.TIMEFRAME_M10,    # 10 minutes
+    12: mt5.TIMEFRAME_M12,    # 12 minutes
+    15: mt5.TIMEFRAME_M15,    # 15 minutes
+    20: mt5.TIMEFRAME_M20,    # 20 minutes
+    30: mt5.TIMEFRAME_M30,    # 30 minutes
+    # Hours
+    60: mt5.TIMEFRAME_H1,     # 1 hour
+    120: mt5.TIMEFRAME_H2,    # 2 hours
+    180: mt5.TIMEFRAME_H3,    # 3 hours
+    240: mt5.TIMEFRAME_H4,    # 4 hours
+    360: mt5.TIMEFRAME_H6,    # 6 hours
+    480: mt5.TIMEFRAME_H8,    # 8 hours
+    720: mt5.TIMEFRAME_H12,   # 12 hours
+    # Days/Weeks/Months
+    1440: mt5.TIMEFRAME_D1,   # 1 day
+    10080: mt5.TIMEFRAME_W1,  # 1 week
+    43200: mt5.TIMEFRAME_MN1  # 1 month
+}
+
+def get_timeframe_constant(timeframe: int) -> int:
+    """
+    Convert user-friendly timeframe integer to MT5 constant with validation.
+    
+    Args:
+        timeframe: Timeframe in minutes (e.g., 60 for H1)
+        
+    Returns:
+        MT5 timeframe constant
+        
+    Raises:
+        ValueError: If timeframe is not supported
+    """
+    if timeframe not in timeframe_map:
+        supported = ', '.join(str(k) for k in sorted(timeframe_map.keys()))
+        raise ValueError(
+            f"Unsupported timeframe: {timeframe}. "
+            f"Supported timeframes (in minutes): {supported}"
+        )
+    return timeframe_map[timeframe]
+
 # Initialize MetaTrader 5 connection
 @mcp.tool()
-def initialize(path:str) -> bool:
+def initialize(path: str) -> bool:
     """
     Initialize the MetaTrader 5 terminal.
     
@@ -431,7 +479,7 @@ def copy_rates_from_pos(
     Returns:
         List[Dict[str, Any]]: List of bars with time, open, high, low, close, tick_volume, spread, and real_volume.
     """
-    rates = mt5.copy_rates_from_pos(symbol, timeframe, start_pos, count)
+    rates = mt5.copy_rates_from_pos(symbol, get_timeframe_constant(timeframe), start_pos, count)
     if rates is None:
         logger.error(f"Failed to copy rates for {symbol}, error code: {mt5.last_error()}")
         raise ValueError(f"Failed to copy rates for {symbol}")
@@ -464,7 +512,7 @@ def copy_rates_from_date(
     Returns:
         List[Dict[str, Any]]: List of bars with time, open, high, low, close, tick_volume, spread, and real_volume.
     """
-    rates = mt5.copy_rates_from_date(symbol, timeframe, date_from, count)
+    rates = mt5.copy_rates_from_date(symbol, get_timeframe_constant(timeframe), date_from, count)
     if rates is None:
         logger.error(f"Failed to copy rates for {symbol} from date {date_from}, error code: {mt5.last_error()}")
         raise ValueError(f"Failed to copy rates for {symbol} from date {date_from}")
@@ -497,7 +545,7 @@ def copy_rates_range(
     Returns:
         List[Dict[str, Any]]: List of bars with time, open, high, low, close, tick_volume, spread, and real_volume.
     """
-    rates = mt5.copy_rates_range(symbol, timeframe, date_from, date_to)
+    rates = mt5.copy_rates_range(symbol, get_timeframe_constant(timeframe), date_from, date_to)
     if rates is None:
         logger.error(f"Failed to copy rates for {symbol} in range {date_from} to {date_to}, error code: {mt5.last_error()}")
         raise ValueError(f"Failed to copy rates for {symbol} in range {date_from} to {date_to}")
