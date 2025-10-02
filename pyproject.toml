@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "mcp-metatrader5-server"
@@ -27,6 +27,14 @@ dependencies = [
     "python-dotenv>=1.1.1",
 ]
 
+[project.optional-dependencies]
+docs = [
+    "mkdocs>=1.5.3",
+    "mkdocs-material>=9.5.0",
+    "pymdown-extensions>=10.7",
+    "mkdocs-autorefs>=0.5.0",
+]
+
 [project.urls]
 "Homepage" = "https://github.com/Qoyyuum/mcp-metatrader5-server"
 "Bug Tracker" = "https://github.com/Qoyyuum/mcp-metatrader5-server/issues"
@@ -34,8 +42,11 @@ dependencies = [
 [project.scripts]
 mt5mcp = "mcp_mt5:main"
 
-[tool.setuptools]
+[tool.hatchling]
 package-dir = {"" = "src"}
 
-[tool.setuptools.packages.find]
+[tool.hatchling.packages.find]
 where = ["src"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcp_mt5"]
