@@ -14,10 +14,10 @@ A Model Context Protocol (MCP) server for MetaTrader 5, allowing AI assistants t
 
 ## Installation
 
-### From PyPI (Coming Soon)
+### From PyPI 
 
 ```bash
-uv pip install mcp-metatrader5-server
+uvx --from mcp-metatrader5-server mt5mcp
 ```
 
 ### From Source
@@ -26,6 +26,7 @@ uv pip install mcp-metatrader5-server
 git clone https://github.com/Qoyyuum/mcp-metatrader5-server.git
 cd mcp-metatrader5-server
 uv sync
+uv run mt5mcp
 ```
 
 ## Requirements
@@ -128,25 +129,22 @@ uv run fastmcp install gemini-cli src/mcp_mt5/main.py
 
 #### Method 3: Manual Configuration
 
-Add this to your `claude_desktop_config.json`:
+Add this to your `claude_desktop_config.json` or whatever LLM config file:
 
 ```json
 {
   "mcpServers": {
     "mcp-metatrader5-server": {
-      "command": "uv",
+      "command": "uvx",
       "args": [
-        "--directory",
-        "C:\\FULL_PATH_TO\\mcp-metatrader5-server",
-        "run",
+        "--from",
+        "mcp-metatrader5-server",
         "mt5mcp"
       ]
     }
   }
 }
 ```
-
-**Note:** Replace `C:\\FULL_PATH_TO\\mcp-metatrader5-server` with your actual installation path.
 
 ## API Reference
 
