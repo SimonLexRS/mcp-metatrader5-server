@@ -521,7 +521,7 @@ def copy_rates_range(
 @mcp.tool()
 def copy_ticks_from_pos(
     symbol: str, 
-    start_pos: int, 
+    start_time: datetime, 
     count: int, 
     flags: int = mt5.COPY_TICKS_ALL
 ) -> List[Dict[str, Any]]:
@@ -530,7 +530,7 @@ def copy_ticks_from_pos(
     
     Args:
         symbol: Symbol name
-        start_pos: Initial position for tick retrieval
+        start_time: Initial time for tick retrieval
         count: Number of ticks to retrieve
         flags: Type of requested ticks:
             - mt5.COPY_TICKS_ALL: All ticks (default)
@@ -540,7 +540,7 @@ def copy_ticks_from_pos(
     Returns:
         List[Dict[str, Any]]: List of ticks.
     """
-    ticks = mt5.copy_ticks_from(symbol, start_pos, count, flags)
+    ticks = mt5.copy_ticks_from(symbol, start_time, count, flags)
     if ticks is None:
         logger.error(f"Failed to copy ticks for {symbol}, error code: {mt5.last_error()}")
         raise ValueError(f"Failed to copy ticks for {symbol}")
@@ -575,10 +575,7 @@ def copy_ticks_from_date(
     Returns:
         List[Dict[str, Any]]: List of ticks.
     """
-    # Convert datetime to timestamp in milliseconds
-    date_from_timestamp = int(date_from.timestamp() * 1000)
-    
-    ticks = mt5.copy_ticks_from(symbol, date_from_timestamp, count, flags)
+    ticks = mt5.copy_ticks_from(symbol, date_from, count, flags)
     if ticks is None:
         logger.error(f"Failed to copy ticks for {symbol} from date {date_from}, error code: {mt5.last_error()}")
         raise ValueError(f"Failed to copy ticks for {symbol} from date {date_from}")
@@ -613,11 +610,7 @@ def copy_ticks_range(
     Returns:
         List[Dict[str, Any]]: List of ticks.
     """
-    # Convert datetime to timestamp in milliseconds
-    date_from_timestamp = int(date_from.timestamp() * 1000)
-    date_to_timestamp = int(date_to.timestamp() * 1000)
-    
-    ticks = mt5.copy_ticks_range(symbol, date_from_timestamp, date_to_timestamp, flags)
+    ticks = mt5.copy_ticks_range(symbol, date_from, date_to, flags)
     if ticks is None:
         logger.error(f"Failed to copy ticks for {symbol} in range {date_from} to {date_to}, error code: {mt5.last_error()}")
         raise ValueError(f"Failed to copy ticks for {symbol} in range {date_from} to {date_to}")
@@ -641,7 +634,7 @@ def get_last_error() -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: Last error code and description.
     """
-    error_code = mt5.last_error()
+    error_code, error_message = mt5.last_error()
     
     error_descriptions = {
         mt5.RES_S_OK: "OK",
@@ -658,7 +651,7 @@ def get_last_error() -> Dict[str, Any]:
         mt5.RES_E_CANCELED: "Request canceled",
     }
     
-    error_description = error_descriptions.get(error_code, "Unknown error")
+    error_description = error_descriptions.get(error_code, error_message or "Unknown error")
     
     return {
         "code": error_code,
