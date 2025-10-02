@@ -464,10 +464,7 @@ def copy_rates_from_date(
     Returns:
         List[Dict[str, Any]]: List of bars with time, open, high, low, close, tick_volume, spread, and real_volume.
     """
-    # Convert datetime to timestamp
-    date_from_timestamp = int(date_from.timestamp())
-    
-    rates = mt5.copy_rates_from_date(symbol, timeframe, date_from_timestamp, count)
+    rates = mt5.copy_rates_from_date(symbol, timeframe, date_from, count)
     if rates is None:
         logger.error(f"Failed to copy rates for {symbol} from date {date_from}, error code: {mt5.last_error()}")
         raise ValueError(f"Failed to copy rates for {symbol} from date {date_from}")
@@ -500,11 +497,7 @@ def copy_rates_range(
     Returns:
         List[Dict[str, Any]]: List of bars with time, open, high, low, close, tick_volume, spread, and real_volume.
     """
-    # Convert datetime to timestamp
-    date_from_timestamp = int(date_from.timestamp())
-    date_to_timestamp = int(date_to.timestamp())
-    
-    rates = mt5.copy_rates_range(symbol, timeframe, date_from_timestamp, date_to_timestamp)
+    rates = mt5.copy_rates_range(symbol, timeframe, date_from, date_to)
     if rates is None:
         logger.error(f"Failed to copy rates for {symbol} in range {date_from} to {date_to}, error code: {mt5.last_error()}")
         raise ValueError(f"Failed to copy rates for {symbol} in range {date_from} to {date_to}")
@@ -907,11 +900,6 @@ def history_orders_get(
     Returns:
         List[HistoryOrder]: List of historical orders.
     """
-    # Convert datetime to timestamp
-    from_timestamp = int(from_date.timestamp()) if from_date else None
-    to_timestamp = int(to_date.timestamp()) if to_date else None
-    
-    # Prepare request
     request = {}
     if symbol is not None:
         request["symbol"] = symbol
@@ -921,10 +909,10 @@ def history_orders_get(
         request["ticket"] = ticket
     if position is not None:
         request["position"] = position
-    if from_timestamp is not None:
-        request["from"] = from_timestamp
-    if to_timestamp is not None:
-        request["to"] = to_timestamp
+    if from_date is not None:
+        request["from"] = from_date
+    if to_date is not None:
+        request["to"] = to_date
     
     # Get history orders
     if request:
@@ -968,11 +956,6 @@ def history_deals_get(
     Returns:
         List[Deal]: List of historical deals.
     """
-    # Convert datetime to timestamp
-    from_timestamp = int(from_date.timestamp()) if from_date else None
-    to_timestamp = int(to_date.timestamp()) if to_date else None
-    
-    # Prepare request
     request = {}
     if symbol is not None:
         request["symbol"] = symbol
@@ -982,10 +965,10 @@ def history_deals_get(
         request["ticket"] = ticket
     if position is not None:
         request["position"] = position
-    if from_timestamp is not None:
-        request["from"] = from_timestamp
-    if to_timestamp is not None:
-        request["to"] = to_timestamp
+    if from_date is not None:
+        request["from"] = from_date
+    if to_date is not None:
+        request["to"] = to_date
     
     # Get history deals
     if request:

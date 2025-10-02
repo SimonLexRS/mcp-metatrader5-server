@@ -10,11 +10,11 @@ build:
   tools:
     python: "3.13"
 
-# Build documentation with Mkdocs
-mkdocs:
-   configuration: docs/mkdocs.yml
-
 # Install documentation dependencies
 python:
   install:
     - requirements: docs/requirements.txt
+
+# Build documentation with Mkdocs
+mkdocs:
+   configuration: docs/mkdocs.yml
