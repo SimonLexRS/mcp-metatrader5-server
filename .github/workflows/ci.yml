@@ -122,13 +122,15 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@v4
 
-    - name: Install dependencies
+    - name: Install docs dependencies only
       run: |
-        uv sync --extra docs
+        # Install only docs dependencies without the main package
+        # This avoids the MetaTrader5 Windows-only dependency
+        uv pip install --system mkdocs>=1.5.3 mkdocs-material>=9.5.0 pymdown-extensions>=10.7 mkdocs-autorefs>=0.5.0
 
     - name: Build docs
       run: |
-        uv run mkdocs build --strict --site-dir site
+        mkdocs build --strict --site-dir site --config-file docs/mkdocs.yml
 
     - name: Upload docs artifacts
       uses: actions/upload-artifact@v4
