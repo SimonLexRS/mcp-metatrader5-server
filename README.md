@@ -63,17 +63,70 @@ uv run mt5mcp
 
 The server will start at http://127.0.0.1:8000
 
-### Installing for Claude Desktop
+### Installing for MCP Clients
 
-#### Method 1: Using FastMCP Install (Recommended)
+#### Method 1: Using `uvx` (Simplest - No Installation Required) ⭐
+
+Add this configuration to your MCP client's config file:
+
+**For Claude Desktop** (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "mcp-metatrader5-server": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/Qoyyuum/mcp-metatrader5-server",
+        "mt5mcp"
+      ]
+    }
+  }
+}
+```
+
+#### Method 2: Using FastMCP Install (Recommended)
 
 ```bash
 git clone https://github.com/Qoyyuum/mcp-metatrader5-server
 cd mcp-metatrader5-server
-uv run fastmcp install src/mcp_mt5/main.py
 ```
 
-#### Method 2: Manual Configuration
+After git cloning the repo, run the following commands:
+
+For MCP JSON format
+
+```bash
+uv run fastmcp install mcp-json src/mcp_mt5/main.py
+```
+
+For Claude Desktop
+
+```bash
+uv run fastmcp install claude-desktop src/mcp_mt5/main.py
+```
+
+For Claude Code
+
+```bash
+uv run fastmcp install claude-code src/mcp_mt5/main.py
+```
+
+For Cursor
+
+```bash
+uv run fastmcp install cursor src/mcp_mt5/main.py
+```
+
+For Gemini CLI
+
+```bash
+uv run fastmcp install gemini-cli src/mcp_mt5/main.py
+```
+
+
+#### Method 3: Manual Configuration
 
 Add this to your `claude_desktop_config.json`:
 

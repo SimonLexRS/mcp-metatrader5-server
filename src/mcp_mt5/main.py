@@ -199,6 +199,18 @@ class Deal(BaseModel):
     comment: str
     external_id: str
 
+timeframe_map = {
+    1: mt5.TIMEFRAME_M1,
+    5: mt5.TIMEFRAME_M5,
+    15: mt5.TIMEFRAME_M15,
+    30: mt5.TIMEFRAME_M30,
+    60: mt5.TIMEFRAME_H1,
+    240: mt5.TIMEFRAME_H4,
+    1440: mt5.TIMEFRAME_D1,
+    10080: mt5.TIMEFRAME_W1,
+    43200: mt5.TIMEFRAME_MN1
+}
+
 # Initialize MetaTrader 5 connection
 @mcp.tool()
 def initialize(path:str) -> bool:
@@ -431,7 +443,7 @@ def copy_rates_from_pos(
     Returns:
         List[Dict[str, Any]]: List of bars with time, open, high, low, close, tick_volume, spread, and real_volume.
     """
-    rates = mt5.copy_rates_from_pos(symbol, timeframe, start_pos, count)
+    rates = mt5.copy_rates_from_pos(symbol, timeframe_map.get(timeframe), start_pos, count)
     if rates is None:
         logger.error(f"Failed to copy rates for {symbol}, error code: {mt5.last_error()}")
         raise ValueError(f"Failed to copy rates for {symbol}")
@@ -464,7 +476,7 @@ def copy_rates_from_date(
     Returns:
         List[Dict[str, Any]]: List of bars with time, open, high, low, close, tick_volume, spread, and real_volume.
     """
-    rates = mt5.copy_rates_from_date(symbol, timeframe, date_from, count)
+    rates = mt5.copy_rates_from_date(symbol, timeframe_map.get(timeframe), date_from, count)
     if rates is None:
         logger.error(f"Failed to copy rates for {symbol} from date {date_from}, error code: {mt5.last_error()}")
         raise ValueError(f"Failed to copy rates for {symbol} from date {date_from}")
@@ -497,7 +509,7 @@ def copy_rates_range(
     Returns:
         List[Dict[str, Any]]: List of bars with time, open, high, low, close, tick_volume, spread, and real_volume.
     """
-    rates = mt5.copy_rates_range(symbol, timeframe, date_from, date_to)
+    rates = mt5.copy_rates_range(symbol, timeframe_map.get(timeframe), date_from, date_to)
     if rates is None:
         logger.error(f"Failed to copy rates for {symbol} in range {date_from} to {date_to}, error code: {mt5.last_error()}")
         raise ValueError(f"Failed to copy rates for {symbol} in range {date_from} to {date_to}")
