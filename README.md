@@ -14,76 +14,86 @@ A Model Context Protocol (MCP) server for MetaTrader 5, allowing AI assistants t
 
 ## Installation
 
+### From PyPI (Coming Soon)
+
+```bash
+uv pip install mcp-metatrader5-server
+```
+
 ### From Source
 
 ```bash
 git clone https://github.com/Qoyyuum/mcp-metatrader5-server.git
 cd mcp-metatrader5-server
-pip install -e .
+uv sync
 ```
 
 ## Requirements
 
-- uv
-- Python 3.11 or higher
-- MetaTrader 5 terminal installed
-- MetaTrader 5 account (demo or real)
+- **uv** (recommended) or pip
+- **Python 3.11 or higher**
+- **MetaTrader 5 terminal** installed on Windows
+- **MetaTrader 5 account** (demo or real)
 
 ## Usage
 
-### Running the Server
+### Quick Start
 
-To run the server in development mode:
-
-```bash
-uv run mt5mcp dev
-```
-
-This will start the server at http://127.0.0.1:8000 by default.
-
-You can specify a different host and port:
+The server runs in **stdio mode** by default for MCP clients like Claude Desktop:
 
 ```bash
-uv run mt5mcp dev --host 0.0.0.0 --port 8080
+uv run mt5mcp
 ```
+
+### Development Mode (HTTP)
+
+For testing with HTTP transport, create a `.env` file:
+
+```env
+MT5_MCP_TRANSPORT=http
+MT5_MCP_HOST=127.0.0.1
+MT5_MCP_PORT=8000
+```
+
+Then run:
+
+```bash
+uv run mt5mcp
+```
+
+The server will start at http://127.0.0.1:8000
 
 ### Installing for Claude Desktop
 
-To install the server for Claude Desktop:
+#### Method 1: Using FastMCP Install (Recommended)
 
 ```bash
 git clone https://github.com/Qoyyuum/mcp-metatrader5-server
 cd mcp-metatrader5-server
-uv run fastmcp install src\mcp_metatrader5_server\server.py
+uv run fastmcp install src/mcp_mt5/main.py
 ```
 
-Check your `claude_desktop_config.json` file. It should look something like this:
+#### Method 2: Manual Configuration
+
+Add this to your `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
-    "MetaTrader 5 MCP Server": {
+    "mcp-metatrader5-server": {
       "command": "uv",
       "args": [
+        "--directory",
+        "C:\\FULL_PATH_TO\\mcp-metatrader5-server",
         "run",
-        "--with",
-        "MetaTrader5",
-        "--with",
-        "fastmcp",
-        "--with",
-        "numpy",
-        "--with",
-        "pandas",
-        "--with",
-        "pydantic",
-        "fastmcp",
-        "run",
-        "C:\\FULL_PATH_TO\\src\\mcp_metatrader5_server\\server.py"
+        "mt5mcp"
       ]
     }
   }
 }
 ```
+
+**Note:** Replace `C:\\FULL_PATH_TO\\mcp-metatrader5-server` with your actual installation path.
 
 ## API Reference
 
@@ -195,46 +205,44 @@ The server provides the following prompts to help AI assistants interact with us
 ```
 mcp-metatrader5-server/
 ├── src/
-│   └── mcp_metatrader5_server/
-│       ├── __init__.py
-│       ├── server.py
-│       ├── market_data.py
-│       ├── trading.py
-│       ├── main.py
-│       └── cli.py
-├── run.py
+│   └── mcp_mt5/
+│       ├── __init__.py      # Entry point with main()
+│       ├── main.py          # FastMCP server with all tools
+│       └── test_client.py   # Test client for development
+├── docs/
+│   ├── getting_started.md
+│   ├── market_data_guide.md
+│   ├── trading_guide.md
+│   └── publishing.md
+├── .env                     # Environment configuration (create from .env.example)
 ├── README.md
-└── pyproject.toml
+├── pyproject.toml           # Project metadata (using hatchling)
+└── uv.lock                  # Dependency lock file
 ```
 
 ### Building the Package
 
-To build the package:
-
-```bash
-python -m pip install build
-python -m build
-```
-
-Or using uv:
+Using uv (recommended):
 
 ```bash
 uv build
 ```
 
+This will create wheel and source distributions in the `dist/` directory.
+
 ### Publishing to PyPI
 
-To publish the package to PyPI:
+Using uv:
 
 ```bash
-python -m pip install twine
-python -m twine upload dist/*
-```
+# Build first
+uv build
 
-Or using uv:
-
-```bash
+# Publish to PyPI
 uv publish
+
+# Or publish to TestPyPI first
+uv publish --publish-url https://test.pypi.org/legacy/
 ```
 
 ## License

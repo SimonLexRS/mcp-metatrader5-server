@@ -1,6 +1,40 @@
-# Getting Started with MetaTrader 5 API
+# Getting Started with MetaTrader 5 MCP Server
 
-This MCP server provides access to the MetaTrader 5 API for trading and market data analysis.
+This MCP server provides access to the MetaTrader 5 API for trading and market data analysis through the Model Context Protocol.
+
+## Installation
+
+### Quick Install
+
+```bash
+git clone https://github.com/Qoyyuum/mcp-metatrader5-server
+cd mcp-metatrader5-server
+uv sync
+```
+
+### Configure for Claude Desktop
+
+```bash
+uv run fastmcp install src/mcp_mt5/main.py
+```
+
+Or manually add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "mcp-metatrader5-server": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "C:\\path\\to\\mcp-metatrader5-server",
+        "run",
+        "mt5mcp"
+      ]
+    }
+  }
+}
+```
 
 ## Basic Workflow
 
@@ -25,49 +59,52 @@ This MCP server provides access to the MetaTrader 5 API for trading and market d
 7. **Shut down the connection**:
    - Use the `shutdown()` tool to close the connection to the MT5 terminal.
 
+## Available Resources
+
+The server provides helpful resources:
+- `mt5://timeframes` - Available timeframe constants
+- `mt5://tick_flags` - Tick flag constants
+- `mt5://order_types` - Order type constants
+- `mt5://order_filling_types` - Order filling type constants
+- `mt5://order_time_types` - Order time type constants
+- `mt5://trade_actions` - Trade action constants
+
 ## Example: Connecting to MT5 and Getting Market Data
 
-```python
-# Initialize MT5
-initialize()
+When using with Claude Desktop or other MCP clients, you can ask the AI assistant:
 
-# Log in to your trading account
-login(account=123456, password="your_password", server="your_server")
+> "Initialize MT5 at path C:\Program Files\MetaTrader 5\terminal64.exe, then login with account 123456, password 'your_password', and server 'your_server'. After that, get the available symbols and show me recent price data for EURUSD on the 15-minute timeframe."
 
-# Get available symbols
-symbols = get_symbols()
-
-# Get recent price data for EURUSD
-rates = copy_rates_from_pos(symbol="EURUSD", timeframe=15, start_pos=0, count=100)
-
-# Shut down the connection
-shutdown()
-```
+The AI will use these tools:
+1. `initialize(path="C:\\Program Files\\MetaTrader 5\\terminal64.exe")`
+2. `login(login=123456, password="your_password", server="your_server")`
+3. `get_symbols()`
+4. `copy_rates_from_pos(symbol="EURUSD", timeframe=15, start_pos=0, count=100)`
 
 ## Example: Placing a Trade
 
-```python
-# Initialize and log in
-initialize()
-login(account=123456, password="your_password", server="your_server")
+Ask the AI assistant:
 
-# Create an order request
-request = OrderRequest(
-    action=mt5.TRADE_ACTION_DEAL,
-    symbol="EURUSD",
-    volume=0.1,
-    type=mt5.ORDER_TYPE_BUY,
-    price=1.1,
-    deviation=20,
-    magic=123456,
-    comment="Buy order",
-    type_time=mt5.ORDER_TIME_GTC,
-    type_filling=mt5.ORDER_FILLING_IOC
-)
+> "Place a buy order for 0.1 lots of EURUSD at market price with 20 pips deviation, stop loss at 1.0950, and take profit at 1.1050."
 
-# Send the order
-result = order_send(request)
+The AI will:
+1. Get the current ask price using `get_symbol_info_tick("EURUSD")`
+2. Create an order request with:
+   - `action`: TRADE_ACTION_DEAL (0)
+   - `symbol`: "EURUSD"
+   - `volume`: 0.1
+   - `type`: ORDER_TYPE_BUY (0)
+   - `price`: current ask price
+   - `sl`: 1.0950
+   - `tp`: 1.1050
+   - `deviation`: 20
+   - `type_filling`: ORDER_FILLING_IOC (2)
+3. Send the order using `order_send(request)`
 
-# Shut down the connection
-shutdown()
-```
+## Important Notes
+
+- **Always initialize MT5** before using any other tools
+- **Login is required** to access account-specific data and place trades
+- **Use `shutdown()`** when done to properly close the connection
+- **Check order results** for success/failure before proceeding
+- **Demo accounts** are recommended for testing
