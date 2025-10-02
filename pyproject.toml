@@ -38,6 +38,7 @@ docs = [
 [project.urls]
 "Homepage" = "https://github.com/Qoyyuum/mcp-metatrader5-server"
 "Bug Tracker" = "https://github.com/Qoyyuum/mcp-metatrader5-server/issues"
+"Documentation" = "https://mcp-metatrader5-server.readthedocs.io"
 
 [project.scripts]
 mt5mcp = "mcp_mt5:main"
