@@ -7,6 +7,9 @@ repo_name: Qoyyuum/mcp-metatrader5-server
 repo_url: https://github.com/Qoyyuum/mcp-metatrader5-server
 edit_uri: edit/main/docs/
 
+# Specify docs directory (relative to mkdocs.yml location)
+docs_dir: .
+
 theme:
   name: material
   palette:
