@@ -1,5 +1,6 @@
 """Pytest configuration and fixtures for MCP MT5 tests."""
 
+import sys
 from unittest.mock import MagicMock, Mock
 
 import pytest
@@ -9,6 +10,12 @@ import pytest
 def mock_mt5(monkeypatch):
     """Mock MetaTrader5 module for unit tests."""
     mock = MagicMock()
+    
+    # Patch the MetaTrader5 module in sys.modules
+    monkeypatch.setitem(sys.modules, "MetaTrader5", mock)
+    
+    # Also patch the mt5 import in the main module
+    monkeypatch.setattr("mcp_mt5.main.mt5", mock, raising=False)
 
     # Mock common MT5 functions
     mock.initialize.return_value = True
