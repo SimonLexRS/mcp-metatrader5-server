@@ -1,15 +1,18 @@
 """Unit tests for account information retrieval."""
-import pytest
+
 from unittest.mock import Mock, patch
+
+import pytest
 from fastmcp import Client
+
 from mcp_mt5.main import mcp
 
 
 @pytest.mark.unit
 class TestAccountInfo:
     """Test account information retrieval."""
-    
-    @patch('mcp_mt5.main.mt5')
+
+    @patch("mcp_mt5.main.mt5")
     async def test_get_account_info_success(self, mock_mt5):
         """Test successful account info retrieval."""
         # Create mock account info
@@ -45,10 +48,10 @@ class TestAccountInfo:
             "company": "Test Company",
         }
         mock_mt5.account_info.return_value = mock_account
-        
+
         async with Client(mcp) as client:
             result = await client.call_tool("get_account_info", {})
-        
+
         assert result.data.login == 123456
         assert result.data.balance == 10000.0
         assert result.data.equity == 10150.50
@@ -56,21 +59,21 @@ class TestAccountInfo:
         assert result.data.currency == "USD"
         assert result.data.leverage == 100
         mock_mt5.account_info.assert_called_once()
-    
-    @patch('mcp_mt5.main.mt5')
+
+    @patch("mcp_mt5.main.mt5")
     async def test_get_account_info_failure(self, mock_mt5):
         """Test account info retrieval failure."""
         mock_mt5.account_info.return_value = None
         mock_mt5.last_error.return_value = (1, "Not connected")
-        
+
         async with Client(mcp) as client:
             with pytest.raises(Exception, match="Failed to get account info"):
                 await client.call_tool("get_account_info", {})
-        
+
         mock_mt5.account_info.assert_called_once()
         mock_mt5.last_error.assert_called_once()
-    
-    @patch('mcp_mt5.main.mt5')
+
+    @patch("mcp_mt5.main.mt5")
     async def test_account_info_all_fields(self, mock_mt5):
         """Test that all expected fields are present in account info."""
         mock_account = Mock()
@@ -105,16 +108,24 @@ class TestAccountInfo:
             "company": "Test",
         }
         mock_mt5.account_info.return_value = mock_account
-        
+
         async with Client(mcp) as client:
             result = await client.call_tool("get_account_info", {})
-        
+
         # Check all required fields exist
         required_fields = [
-            'login', 'balance', 'equity', 'margin', 'margin_free',
-            'profit', 'currency', 'leverage', 'name', 'server'
+            "login",
+            "balance",
+            "equity",
+            "margin",
+            "margin_free",
+            "profit",
+            "currency",
+            "leverage",
+            "name",
+            "server",
         ]
-        
+
         for field in required_fields:
             assert hasattr(result.data, field), f"Missing field: {field}"
 
@@ -122,8 +133,8 @@ class TestAccountInfo:
 @pytest.mark.unit
 class TestTerminalInfo:
     """Test terminal information retrieval."""
-    
-    @patch('mcp_mt5.main.mt5')
+
+    @patch("mcp_mt5.main.mt5")
     async def test_get_terminal_info_success(self, mock_mt5):
         """Test successful terminal info retrieval."""
         mock_terminal = Mock()
@@ -152,25 +163,25 @@ class TestTerminalInfo:
             "commondata_path": "C:\\Users\\Test\\AppData\\Roaming\\MetaQuotes\\Common",
         }
         mock_mt5.terminal_info.return_value = mock_terminal
-        
+
         async with Client(mcp) as client:
             result = await client.call_tool("get_terminal_info", {})
-        
+
         assert result.data["connected"] is True
         assert result.data["trade_allowed"] is True
         assert result.data["build"] == 3802
         assert result.data["company"] == "MetaQuotes"
         mock_mt5.terminal_info.assert_called_once()
-    
-    @patch('mcp_mt5.main.mt5')
+
+    @patch("mcp_mt5.main.mt5")
     async def test_get_terminal_info_failure(self, mock_mt5):
         """Test terminal info retrieval failure."""
         mock_mt5.terminal_info.return_value = None
         mock_mt5.last_error.return_value = (1, "Not initialized")
-        
+
         async with Client(mcp) as client:
             with pytest.raises(Exception, match="Failed to get terminal info"):
                 await client.call_tool("get_terminal_info", {})
-        
+
         mock_mt5.terminal_info.assert_called_once()
         mock_mt5.last_error.assert_called_once()

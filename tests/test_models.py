@@ -1,21 +1,21 @@
 """Unit tests for Pydantic models."""
+
 import pytest
 from pydantic import ValidationError
+
 from mcp_mt5.main import (
     AccountInfo,
-    SymbolInfo,
-    OrderRequest,
-    OrderResult,
-    Position,
-    HistoryOrder,
     Deal,
+    OrderRequest,
+    Position,
+    SymbolInfo,
 )
 
 
 @pytest.mark.unit
 class TestAccountInfoModel:
     """Test AccountInfo Pydantic model."""
-    
+
     def test_valid_account_info(self):
         """Test creating valid AccountInfo."""
         data = {
@@ -48,21 +48,21 @@ class TestAccountInfoModel:
             "currency": "USD",
             "company": "Test Company",
         }
-        
+
         account = AccountInfo(**data)
-        
+
         assert account.login == 123456
         assert account.balance == 10000.0
         assert account.equity == 10150.50
         assert account.currency == "USD"
-    
+
     def test_account_info_missing_required_field(self):
         """Test that missing required fields raise ValidationError."""
         data = {
             "login": 123456,
             # Missing other required fields
         }
-        
+
         with pytest.raises(ValidationError):
             AccountInfo(**data)
 
@@ -70,7 +70,7 @@ class TestAccountInfoModel:
 @pytest.mark.unit
 class TestOrderRequestModel:
     """Test OrderRequest Pydantic model."""
-    
+
     def test_valid_order_request(self):
         """Test creating valid OrderRequest."""
         data = {
@@ -85,15 +85,15 @@ class TestOrderRequestModel:
             "magic": 12345,
             "comment": "Test order",
         }
-        
+
         order = OrderRequest(**data)
-        
+
         assert order.symbol == "EURUSD"
         assert order.volume == 0.1
         assert order.price == 1.10000
         assert order.sl == 1.09500
         assert order.tp == 1.10500
-    
+
     def test_order_request_optional_fields(self):
         """Test OrderRequest with only required fields."""
         data = {
@@ -103,9 +103,9 @@ class TestOrderRequestModel:
             "type": 0,
             "price": 1.10000,
         }
-        
+
         order = OrderRequest(**data)
-        
+
         assert order.sl is None
         assert order.tp is None
         assert order.deviation is None
@@ -116,7 +116,7 @@ class TestOrderRequestModel:
 @pytest.mark.unit
 class TestSymbolInfoModel:
     """Test SymbolInfo Pydantic model."""
-    
+
     def test_valid_symbol_info(self):
         """Test creating valid SymbolInfo."""
         data = {
@@ -127,17 +127,17 @@ class TestSymbolInfoModel:
             "bid": 1.10000,
             "ask": 1.10002,
         }
-        
+
         symbol = SymbolInfo(**data)
-        
+
         assert symbol.name == "EURUSD"
         assert symbol.digits == 5
         assert symbol.bid == 1.10000
-    
+
     def test_symbol_info_all_optional_fields(self):
         """Test SymbolInfo with all fields as None except name."""
         symbol = SymbolInfo(name="EURUSD")
-        
+
         assert symbol.name == "EURUSD"
         assert symbol.description is None
         assert symbol.bid is None
@@ -146,7 +146,7 @@ class TestSymbolInfoModel:
 @pytest.mark.unit
 class TestPositionModel:
     """Test Position Pydantic model."""
-    
+
     def test_valid_position(self):
         """Test creating valid Position."""
         data = {
@@ -170,9 +170,9 @@ class TestPositionModel:
             "comment": "Test position",
             "external_id": "",
         }
-        
+
         position = Position(**data)
-        
+
         assert position.ticket == 123456789
         assert position.symbol == "EURUSD"
         assert position.volume == 0.1
@@ -182,7 +182,7 @@ class TestPositionModel:
 @pytest.mark.unit
 class TestDealModel:
     """Test Deal Pydantic model."""
-    
+
     def test_valid_deal(self):
         """Test creating valid Deal."""
         data = {
@@ -205,9 +205,9 @@ class TestDealModel:
             "comment": "Test deal",
             "external_id": "",
         }
-        
+
         deal = Deal(**data)
-        
+
         assert deal.ticket == 987654321
         assert deal.symbol == "EURUSD"
         assert deal.volume == 0.1

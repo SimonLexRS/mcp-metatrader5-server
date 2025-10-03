@@ -1,21 +1,22 @@
 """Pytest configuration and fixtures for MCP MT5 tests."""
+
+from unittest.mock import MagicMock, Mock
+
 import pytest
-from unittest.mock import Mock, MagicMock
-import MetaTrader5 as mt5
 
 
 @pytest.fixture
 def mock_mt5(monkeypatch):
     """Mock MetaTrader5 module for unit tests."""
     mock = MagicMock()
-    
+
     # Mock common MT5 functions
     mock.initialize.return_value = True
     mock.shutdown.return_value = None
     mock.login.return_value = True
     mock.last_error.return_value = (0, "Success")
     mock.version.return_value = (5, 0, 5260)
-    
+
     # Mock account info
     mock_account = Mock()
     mock_account._asdict.return_value = {
@@ -48,7 +49,7 @@ def mock_mt5(monkeypatch):
         "commission_blocked": 0.0,
     }
     mock.account_info.return_value = mock_account
-    
+
     # Mock terminal info
     mock_terminal = Mock()
     mock_terminal._asdict.return_value = {
@@ -76,7 +77,7 @@ def mock_mt5(monkeypatch):
         "commondata_path": "C:\\Users\\Test\\AppData\\Roaming\\MetaQuotes\\Common",
     }
     mock.terminal_info.return_value = mock_terminal
-    
+
     # Mock timeframe constants
     mock.TIMEFRAME_M1 = 1
     mock.TIMEFRAME_M2 = 2
@@ -99,12 +100,12 @@ def mock_mt5(monkeypatch):
     mock.TIMEFRAME_D1 = 16408
     mock.TIMEFRAME_W1 = 32769
     mock.TIMEFRAME_MN1 = 49153
-    
+
     # Mock tick flags
     mock.COPY_TICKS_ALL = -1
     mock.COPY_TICKS_INFO = 1
     mock.COPY_TICKS_TRADE = 2
-    
+
     # Mock order types
     mock.ORDER_TYPE_BUY = 0
     mock.ORDER_TYPE_SELL = 1
@@ -115,18 +116,18 @@ def mock_mt5(monkeypatch):
     mock.ORDER_TYPE_BUY_STOP_LIMIT = 6
     mock.ORDER_TYPE_SELL_STOP_LIMIT = 7
     mock.ORDER_TYPE_CLOSE_BY = 8
-    
+
     # Mock filling types
     mock.ORDER_FILLING_FOK = 0
     mock.ORDER_FILLING_IOC = 1
     mock.ORDER_FILLING_RETURN = 2
-    
+
     # Mock time types
     mock.ORDER_TIME_GTC = 0
     mock.ORDER_TIME_DAY = 1
     mock.ORDER_TIME_SPECIFIED = 2
     mock.ORDER_TIME_SPECIFIED_DAY = 3
-    
+
     # Mock trade actions
     mock.TRADE_ACTION_DEAL = 1
     mock.TRADE_ACTION_PENDING = 5
@@ -134,7 +135,7 @@ def mock_mt5(monkeypatch):
     mock.TRADE_ACTION_MODIFY = 7
     mock.TRADE_ACTION_REMOVE = 8
     mock.TRADE_ACTION_CLOSE_BY = 10
-    
+
     # Mock error codes
     mock.RES_S_OK = 1
     mock.RES_E_FAIL = -1
@@ -148,7 +149,7 @@ def mock_mt5(monkeypatch):
     mock.RES_E_INTERNAL_FAIL = -10000
     mock.RES_E_DONE = -10001
     mock.RES_E_CANCELED = -10002
-    
+
     return mock
 
 
