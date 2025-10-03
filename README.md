@@ -1,5 +1,9 @@
 [![MseeP.ai Security Assessment Badge](https://mseep.net/pr/qoyyuum-mcp-metatrader5-server-badge.png)](https://mseep.ai/app/qoyyuum-mcp-metatrader5-server)
 
+[![codecov](https://codecov.io/github/Qoyyuum/mcp-metatrader5-server/graph/badge.svg?token=SRECTEZUAR)](https://codecov.io/github/Qoyyuum/mcp-metatrader5-server)
+
+[![PyPI version](https://badge.fury.io/py/mcp-metatrader5-server.svg)](https://pypi.org/project/mcp-metatrader5-server/)
+
 # MetaTrader 5 MCP Server
 
 A Model Context Protocol (MCP) server for MetaTrader 5, allowing AI assistants to interact with the MetaTrader 5 platform for trading and market data analysis. [Documentation](https://mcp-metatrader5-server.readthedocs.io)
