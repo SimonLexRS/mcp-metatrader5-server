@@ -10,6 +10,9 @@ edit_uri: edit/main/docs/
 # Specify docs directory (relative to mkdocs.yml location)
 docs_dir: .
 
+# Build output directory (outside of docs_dir to avoid nested builds)
+site_dir: ../site
+
 theme:
   name: material
   palette:
