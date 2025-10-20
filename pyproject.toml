@@ -21,7 +21,7 @@ classifiers = [
 ]
 dependencies = [
     "fastmcp==2.12.5",
-    "metatrader5==5.0.5260",
+    "metatrader5==5.0.5370",
     "pandas>=2.3.3",
     "pydantic>=2.11.9",
     "python-dotenv>=1.1.1",
