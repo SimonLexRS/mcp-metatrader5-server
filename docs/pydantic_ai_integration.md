@@ -47,7 +47,7 @@ The integration combines three components:
 2. **MCP Client** - Communicates with the MCP server using the Model Context Protocol
 3. **MT5 MCP Server** - Provides tools to interact with MetaTrader 5
 
-```
+```text
 ┌─────────────────────┐
 │   Pydantic AI       │
 │     Agent           │
