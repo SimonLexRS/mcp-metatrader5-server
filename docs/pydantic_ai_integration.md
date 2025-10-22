@@ -245,7 +245,7 @@ Here's a complete example of an automated trading bot using Pydantic AI and the 
 ```python
 import asyncio
 from datetime import datetime
-from typing import List
+from typing import Any, List
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.anthropic import AnthropicModel
