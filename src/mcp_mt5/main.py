@@ -510,8 +510,8 @@ def copy_rates_from_pos(
     Get bars from a specified symbol and timeframe starting from the specified position.
 
     Args:
-        symbol: Symbol name
-        timeframe: Timeframe as specified in TIMEFRAME_* constants:
+        symbol: Symbol name (e.g., "EURUSD", "GBPUSD")
+        timeframe: Timeframe in minutes as an INTEGER:
             - 1: TIMEFRAME_M1 (1 minute)
             - 5: TIMEFRAME_M5 (5 minutes)
             - 15: TIMEFRAME_M15 (15 minutes)
@@ -521,8 +521,12 @@ def copy_rates_from_pos(
             - 1440: TIMEFRAME_D1 (1 day)
             - 10080: TIMEFRAME_W1 (1 week)
             - 43200: TIMEFRAME_MN1 (1 month)
-        start_pos: Initial position for bar retrieval
-        count: Number of bars to retrieve
+        start_pos: Starting position as an INTEGER (0 = most recent bar, 1 = second most recent, etc.)
+        count: Number of bars to retrieve as an INTEGER (e.g., 100 for last 100 bars)
+
+    Example:
+        To get the last 100 bars: start_pos=0, count=100
+        To get bars 10-20 from the end: start_pos=10, count=10
 
     Returns:
         List[Dict[str, Any]]: List of bars with time, open, high, low, close, tick_volume, spread, and real_volume.
