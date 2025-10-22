@@ -164,9 +164,7 @@ class TestCopyTicksJsonSerialization:
         """Test that copy_ticks_from_pos returns JSON-serializable data"""
         mock_copy_ticks.return_value = mock_ticks_data
 
-        result = copy_ticks_from_pos(
-            symbol="EURUSD", start_time=datetime(2024, 1, 1), count=2
-        )
+        result = copy_ticks_from_pos(symbol="EURUSD", start_time=datetime(2024, 1, 1), count=2)
 
         # This should not raise an exception
         try:
@@ -184,9 +182,7 @@ class TestCopyTicksJsonSerialization:
         """Test that copy_ticks_from_date returns JSON-serializable data"""
         mock_copy_ticks.return_value = mock_ticks_data
 
-        result = copy_ticks_from_date(
-            symbol="EURUSD", date_from=datetime(2024, 1, 1), count=2
-        )
+        result = copy_ticks_from_date(symbol="EURUSD", date_from=datetime(2024, 1, 1), count=2)
 
         # This should not raise an exception
         try:
