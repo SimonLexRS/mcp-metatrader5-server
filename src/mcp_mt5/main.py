@@ -723,8 +723,6 @@ def get_last_error() -> dict[str, Any]:
         mt5.RES_E_UNSUPPORTED: "Unsupported method",
         mt5.RES_E_AUTO_TRADING_DISABLED: "Auto-trading disabled",
         mt5.RES_E_INTERNAL_FAIL: "Internal failure",
-        mt5.RES_E_DONE: "Request completed",
-        mt5.RES_E_CANCELED: "Request canceled",
     }
 
     error_description = error_descriptions.get(error_code, error_message or "Unknown error")
