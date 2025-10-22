@@ -151,6 +151,7 @@ Ask your AI assistant:
 - [Getting Started Guide](getting_started.md) - Detailed setup and usage
 - [Market Data Guide](market_data_guide.md) - Working with market data
 - [Trading Guide](trading_guide.md) - Placing and managing trades
+- [Pydantic AI Integration](pydantic_ai_integration.md) - Using with Pydantic AI framework
 - [Publishing Guide](publishing.md) - Publishing to PyPI
 
 ## License

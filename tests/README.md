@@ -136,3 +136,7 @@ Tests are automatically run on GitHub Actions for:
 - **Target**: 80%+ code coverage
 - **Current**: Run `pytest --cov` to see current coverage
 - Focus on critical paths and error handling
+
+## Disclaimer
+
+This software/model context protocol/author is not liable for any financial losses resulting from the use of the tools provided. Use at your own risk.
