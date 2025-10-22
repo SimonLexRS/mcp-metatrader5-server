@@ -1,3 +1,33 @@
+"""
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                           ⚠️  EDUCATIONAL USE ONLY ⚠️                          ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+DISCLAIMER: This trading agent example is provided for EDUCATIONAL and
+DEMONSTRATION purposes ONLY. It is NOT financial advice and should NOT be used
+with real money or live trading accounts.
+
+⚠️  CRITICAL WARNINGS:
+    • Algorithmic trading carries substantial risk of financial loss
+    • Past performance does not guarantee future results
+    • This code has NOT been tested in production environments
+    • Using this with real funds may result in complete capital loss
+    • No warranty or guarantee of profitability is provided
+
+📋 BEFORE USING THIS CODE:
+    • Thoroughly test on demo accounts only
+    • Understand all risks involved in automated trading
+    • Consult with licensed financial advisors
+    • Comply with all applicable financial regulations
+    • Never risk money you cannot afford to lose
+
+By using this code, you acknowledge that you are solely responsible for any
+financial losses or damages. The authors and contributors are not liable for
+any trading losses or issues arising from the use of this software.
+
+For educational purposes only. Use at your own risk.
+"""
+
 import asyncio
 import os
 from typing import Literal
@@ -81,7 +111,7 @@ trading_agent = Agent(
     - Scale position size based on confidence and volatility
 
     POSITION SIZING:
-    - Risk is automatically calculated at 10% of account per trade
+    - Risk is automatically calculated at 1% of account per trade
     - Stop loss distance determines position size
     - Recommend stop losses between 20-50 pips for major pairs
     - Take profits should be 40-150 pips (aim for 2:1+ RR)
@@ -103,14 +133,32 @@ trading_agent = Agent(
 
 
 async def run_trading_agent():
+    """
+    Run the trading agent with proper MCP server lifecycle management.
+
+    The async context manager ensures the MCP server is started before use
+    and properly shut down after completion or on errors.
+    """
     try:
-        decision = await trading_agent.run("Should I buy or sell XAUUSD?")
-        print(f"\nDecision: {decision}")
-        # Implement actual trading logic here
+        # Use async context manager to handle MCP server lifecycle
+        async with trading_agent:
+            print("🤖 Trading agent started with MCP server connection...")
+
+            decision = await trading_agent.run("Should I buy or sell XAUUSD?")
+            print(f"\nDecision: {decision}")
+            # Implement actual trading logic here
+
+            print("\n✅ Trading agent completed successfully")
+        # MCP server is automatically shut down here
+
     except ModelHTTPError as e:
-        print(f"Model error: {e}")
+        print(f"❌ Model error: {e}")
+        raise
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        print(f"❌ Unexpected error: {e}")
+        raise
+    finally:
+        print("\n🔒 MCP server connection closed")
 
 
 if __name__ == "__main__":
