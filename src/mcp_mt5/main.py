@@ -218,22 +218,29 @@ class Deal(BaseModel):
 def _format_timestamps_to_iso8601_utc(df: pd.DataFrame) -> None:
     """
     Convert timestamp columns in a DataFrame to ISO 8601 UTC format strings.
-    
+
     Modifies the DataFrame in-place, converting:
     - 'time' column: seconds -> ISO 8601 with Z suffix (e.g., "2024-01-22T10:00:00Z")
     - 'time_msc' column: milliseconds -> ISO 8601 with milliseconds and Z suffix (e.g., "2024-01-22T10:00:00.123Z")
-    
+
     Args:
         df: DataFrame containing timestamp columns to format
     """
     if "time" in df.columns:
-        df["time"] = pd.to_datetime(df["time"], unit="s", utc=True).dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-    
+        df["time"] = pd.to_datetime(df["time"], unit="s", utc=True).dt.strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
+
     if "time_msc" in df.columns:
         # Convert milliseconds to datetime, then format with millisecond precision
         dt_series = pd.to_datetime(df["time_msc"], unit="ms", utc=True)
         # Format with milliseconds (3 digits) instead of microseconds (6 digits)
-        df["time_msc"] = dt_series.dt.strftime("%Y-%m-%dT%H:%M:%S") + "." + (df["time_msc"] % 1000).astype(str).str.zfill(3) + "Z"
+        df["time_msc"] = (
+            dt_series.dt.strftime("%Y-%m-%dT%H:%M:%S")
+            + "."
+            + (df["time_msc"] % 1000).astype(str).str.zfill(3)
+            + "Z"
+        )
 
 
 timeframe_map = {
