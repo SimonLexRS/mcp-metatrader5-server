@@ -2,9 +2,8 @@
 
 import json
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-import MetaTrader5 as mt5
 import numpy as np
 import pytest
 
