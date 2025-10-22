@@ -12,6 +12,26 @@ from pydantic_ai.providers.openrouter import OpenRouterProvider
 
 dotenv.load_dotenv()
 
+# Validate required environment variables
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+
+if not OPENROUTER_MODEL:
+    raise ValueError(
+        "OPENROUTER_MODEL environment variable is required.\n"
+        "Please set it in your .env file or environment:\n"
+        "  OPENROUTER_MODEL=mistralai/mistral-small-3.2-24b-instruct:free\n"
+        "See https://openrouter.ai/models for available models."
+    )
+
+if not OPENROUTER_API_KEY:
+    raise ValueError(
+        "OPENROUTER_API_KEY environment variable is required.\n"
+        "Please set it in your .env file or environment:\n"
+        "  OPENROUTER_API_KEY=your_api_key_here\n"
+        "Get your API key from https://openrouter.ai/keys"
+    )
+
 
 # Define structured output for trading decisions
 class TradingDecision(BaseModel):
@@ -30,10 +50,10 @@ class TradingDecision(BaseModel):
 # Setup MCP server for MetaTrader 5
 mt5_server = MCPServerStdio("uv", args=["run", "mt5mcp"], timeout=60)
 
-# Create the AI model
+# Create the AI model with validated credentials
 model = OpenAIChatModel(
-    os.getenv("OPENROUTER_MODEL"),
-    provider=OpenRouterProvider(api_key=os.getenv("OPENROUTER_API_KEY")),
+    OPENROUTER_MODEL,
+    provider=OpenRouterProvider(api_key=OPENROUTER_API_KEY),
 )
 
 # Create the automated trading agent
