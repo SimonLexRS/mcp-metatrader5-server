@@ -73,6 +73,7 @@ nav:
   - Guides:
       - Market Data: market_data_guide.md
       - Trading: trading_guide.md
+      - Pydantic AI Integration: pydantic_ai_integration.md
   - Development:
       - Publishing: publishing.md
   - API Reference: api_reference.md

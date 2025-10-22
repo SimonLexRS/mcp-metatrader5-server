@@ -108,3 +108,9 @@ The AI will:
 - **Use `shutdown()`** when done to properly close the connection
 - **Check order results** for success/failure before proceeding
 - **Demo accounts** are recommended for testing
+
+
+## Disclaimer
+
+This software/model context protocol/author is not liable for any financial losses resulting from the use of the tools provided. Use at your own risk.
+
