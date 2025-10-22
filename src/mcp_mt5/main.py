@@ -506,9 +506,9 @@ def copy_rates_from_pos(
 
     # Convert numpy array to list of dictionaries
     df = pd.DataFrame(rates)
-    # Convert time to datetime
+    # Convert time to ISO format string for JSON serialization
     if "time" in df.columns:
-        df["time"] = pd.to_datetime(df["time"], unit="s")
+        df["time"] = pd.to_datetime(df["time"], unit="s").dt.strftime("%Y-%m-%dT%H:%M:%S")
 
     return df.to_dict("records")
 
@@ -539,9 +539,9 @@ def copy_rates_from_date(
 
     # Convert numpy array to list of dictionaries
     df = pd.DataFrame(rates)
-    # Convert time to datetime
+    # Convert time to ISO format string for JSON serialization
     if "time" in df.columns:
-        df["time"] = pd.to_datetime(df["time"], unit="s")
+        df["time"] = pd.to_datetime(df["time"], unit="s").dt.strftime("%Y-%m-%dT%H:%M:%S")
 
     return df.to_dict("records")
 
@@ -572,9 +572,9 @@ def copy_rates_range(
 
     # Convert numpy array to list of dictionaries
     df = pd.DataFrame(rates)
-    # Convert time to datetime
+    # Convert time to ISO format string for JSON serialization
     if "time" in df.columns:
-        df["time"] = pd.to_datetime(df["time"], unit="s")
+        df["time"] = pd.to_datetime(df["time"], unit="s").dt.strftime("%Y-%m-%dT%H:%M:%S")
 
     return df.to_dict("records")
 
@@ -606,11 +606,11 @@ def copy_ticks_from_pos(
 
     # Convert numpy array to list of dictionaries
     df = pd.DataFrame(ticks)
-    # Convert time to datetime
+    # Convert time to ISO format string for JSON serialization
     if "time" in df.columns:
-        df["time"] = pd.to_datetime(df["time"], unit="s")
+        df["time"] = pd.to_datetime(df["time"], unit="s").dt.strftime("%Y-%m-%dT%H:%M:%S")
     if "time_msc" in df.columns:
-        df["time_msc"] = pd.to_datetime(df["time_msc"], unit="ms")
+        df["time_msc"] = pd.to_datetime(df["time_msc"], unit="ms").dt.strftime("%Y-%m-%dT%H:%M:%S.%f")
 
     return df.to_dict("records")
 
@@ -641,11 +641,11 @@ def copy_ticks_from_date(
 
     # Convert numpy array to list of dictionaries
     df = pd.DataFrame(ticks)
-    # Convert time to datetime
+    # Convert time to ISO format string for JSON serialization
     if "time" in df.columns:
-        df["time"] = pd.to_datetime(df["time"], unit="s")
+        df["time"] = pd.to_datetime(df["time"], unit="s").dt.strftime("%Y-%m-%dT%H:%M:%S")
     if "time_msc" in df.columns:
-        df["time_msc"] = pd.to_datetime(df["time_msc"], unit="ms")
+        df["time_msc"] = pd.to_datetime(df["time_msc"], unit="ms").dt.strftime("%Y-%m-%dT%H:%M:%S.%f")
 
     return df.to_dict("records")
 
@@ -676,11 +676,11 @@ def copy_ticks_range(
 
     # Convert numpy array to list of dictionaries
     df = pd.DataFrame(ticks)
-    # Convert time to datetime
+    # Convert time to ISO format string for JSON serialization
     if "time" in df.columns:
-        df["time"] = pd.to_datetime(df["time"], unit="s")
+        df["time"] = pd.to_datetime(df["time"], unit="s").dt.strftime("%Y-%m-%dT%H:%M:%S")
     if "time_msc" in df.columns:
-        df["time_msc"] = pd.to_datetime(df["time_msc"], unit="ms")
+        df["time_msc"] = pd.to_datetime(df["time_msc"], unit="ms").dt.strftime("%Y-%m-%dT%H:%M:%S.%f")
 
     return df.to_dict("records")
 
