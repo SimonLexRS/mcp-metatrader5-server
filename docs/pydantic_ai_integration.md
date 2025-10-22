@@ -132,15 +132,16 @@ This example shows a more sophisticated agent that can analyze market data and e
 
 ```python
 import asyncio
-from datetime import datetime, timedelta
-from typing import List, Dict, Any
 from pydantic import BaseModel, Field
-from pydantic_ai import Agent, RunContext
-from pydantic_ai.models.openai import OpenAIModel
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openrouter import OpenRouterProvider
+from pydantic_ai.mcp import MCPServerStdio
+import os
+import dotenv
 
-# Define structured outputs
+dotenv.load_dotenv()
+# Define structured output for market analysis
 class MarketAnalysis(BaseModel):
     """Market analysis result"""
     symbol: str
@@ -151,38 +152,32 @@ class MarketAnalysis(BaseModel):
     recommendation: str = Field(description="Trading recommendation")
     risk_level: str = Field(description="Risk level: low, medium, or high")
 
-class TradeSignal(BaseModel):
-    """Trade signal with entry and exit levels"""
-    symbol: str
-    action: str = Field(description="BUY or SELL")
-    entry_price: float
-    stop_loss: float
-    take_profit: float
-    volume: float = Field(default=0.1, description="Position size in lots")
-    confidence: float = Field(ge=0.0, le=1.0, description="Signal confidence 0-1")
+# Setup MCP server for MetaTrader 5
+mt5_server = MCPServerStdio(
+    'uvx',
+    args=['--from', 'mcp-metatrader5-server', 'mt5mcp'],
+    timeout=30
+)
 
-# Dependencies for the agent
-class MT5Dependencies(BaseModel):
-    """Dependencies injected into the agent"""
-    session: Any = Field(exclude=True)  # MCP session
-    mt5_path: str = r"C:\Program Files\MetaTrader 5\terminal64.exe"
-    account: int | None = None
-    is_initialized: bool = False
-    is_logged_in: bool = False
+# Create the AI model
+model = OpenAIChatModel(
+    'mistralai/mistral-small-3.2-24b-instruct:free',
+    provider=OpenRouterProvider(api_key=os.getenv("OPENROUTER_API_KEY"))
+)
 
-# Create the trading agent
-model = OpenAIModel('gpt-4o')
+# Create the trading agent with MT5 MCP server as a toolset
 trading_agent = Agent(
     model,
-    result_type=MarketAnalysis,
+    output_type=MarketAnalysis,
     system_prompt="""You are an expert trading analyst with access to MetaTrader 5 market data.
     
     Your responsibilities:
-    1. Analyze market data using technical indicators
-    2. Identify key support and resistance levels
-    3. Determine market trends (bullish, bearish, sideways)
-    4. Provide clear trading recommendations
-    5. Assess risk levels for each recommendation
+    1. Initialize MetaTrader 5 first using the initialize tool
+    2. Analyze market data using technical indicators
+    3. Identify key support and resistance levels
+    4. Determine market trends (bullish, bearish, sideways)
+    5. Provide clear trading recommendations
+    6. Assess risk levels for each recommendation
     
     Always consider:
     - Multiple timeframe analysis
@@ -190,154 +185,53 @@ trading_agent = Agent(
     - Market volatility
     - Recent price action
     
+    Available tools from MT5:
+    - initialize: Initialize MT5 connection
+    - copy_rates_from_pos: Get historical price data
+    - get_symbol_info_tick: Get current price tick
+    - get_account_info: Get account balance and info
+    - positions_get: Get open positions
+    - shutdown: Shutdown MT5 connection
+    
     Be conservative with recommendations and always prioritize capital preservation.""",
-    deps_type=MT5Dependencies,
+    toolsets=[mt5_server],  # Register MT5 MCP server as a toolset
     retries=2
 )
 
-@trading_agent.tool
-async def get_market_data(
-    ctx: RunContext[MT5Dependencies],
-    symbol: str,
-    timeframe: int = 60,
-    count: int = 100
-) -> List[Dict[str, Any]]:
-    """
-    Get historical market data for analysis.
-    
-    Args:
-        symbol: Trading symbol (e.g., "EURUSD", "GBPUSD")
-        timeframe: Timeframe in minutes (1, 5, 15, 30, 60, 240, 1440)
-        count: Number of bars to retrieve
-        
-    Returns:
-        List of price bars with OHLC data
-    """
-    result = await ctx.deps.session.call_tool(
-        "copy_rates_from_pos",
-        arguments={
-            "symbol": symbol,
-            "timeframe": timeframe,
-            "start_pos": 0,
-            "count": count
-        }
-    )
-    return result.content[0].text if result.content else []
-
-@trading_agent.tool
-async def get_current_price(
-    ctx: RunContext[MT5Dependencies],
-    symbol: str
-) -> Dict[str, Any]:
-    """
-    Get the current bid/ask price for a symbol.
-    
-    Args:
-        symbol: Trading symbol
-        
-    Returns:
-        Current tick data with bid, ask, and last prices
-    """
-    result = await ctx.deps.session.call_tool(
-        "get_symbol_info_tick",
-        arguments={"symbol": symbol}
-    )
-    return result.content[0].text if result.content else {}
-
-@trading_agent.tool
-async def get_account_balance(
-    ctx: RunContext[MT5Dependencies]
-) -> Dict[str, Any]:
-    """
-    Get current account balance and equity.
-    
-    Returns:
-        Account information including balance, equity, margin
-    """
-    result = await ctx.deps.session.call_tool(
-        "get_account_info",
-        arguments={}
-    )
-    return result.content[0].text if result.content else {}
-
-@trading_agent.tool
-async def get_open_positions(
-    ctx: RunContext[MT5Dependencies],
-    symbol: str | None = None
-) -> List[Dict[str, Any]]:
-    """
-    Get currently open trading positions.
-    
-    Args:
-        symbol: Optional symbol filter
-        
-    Returns:
-        List of open positions
-    """
-    args = {}
-    if symbol:
-        args["symbol"] = symbol
-    
-    result = await ctx.deps.session.call_tool(
-        "positions_get",
-        arguments=args
-    )
-    return result.content[0].text if result.content else []
-
-# Initialize and run the trading agent
+# Run the trading agent
 async def run_trading_analysis():
-    """Run a complete market analysis using the trading agent"""
+    """Run a complete market analysis using the trading agent with MCP"""
     
-    # Setup MCP server connection
-    server_params = StdioServerParameters(
-        command="uvx",
-        args=["--from", "mcp-metatrader5-server", "mt5mcp"]
-    )
-    
-    async with stdio_client(server_params) as (read, write):
-        async with ClientSession(read, write) as session:
-            # Initialize the MCP session
-            await session.initialize()
+    # Use the agent context manager which handles MCP server lifecycle
+    async with trading_agent:
+        print("\n🔍 Analyzing EURUSD market...")
+        
+        # The agent will automatically use the MT5 MCP tools
+        result = await trading_agent.run(
+            """Analyze the EURUSD market on the 1-hour timeframe.
             
-            # Initialize MT5
-            init_result = await session.call_tool(
-                "initialize",
-                arguments={"path": r"C:\Program Files\MetaTrader 5\terminal64.exe"}
-            )
-            print(f"MT5 Initialized: {init_result.content}")
+            Steps to follow:
+            1. First initialize MetaTrader 5 with path: C:\\Program Files\\MetaTrader 5\\terminal64.exe
+            2. Get the last 100 bars of price data for EURUSD on 60-minute timeframe
+            3. Get the current price for EURUSD
+            4. Analyze the data to identify the trend
+            5. Find key support and resistance levels
+            6. Provide a trading recommendation with risk assessment
+            7. Finally, shutdown the MT5 connection
             
-            # Create dependencies
-            deps = MT5Dependencies(
-                session=session,
-                is_initialized=True
-            )
-            
-            # Run analysis
-            print("\n🔍 Analyzing EURUSD market...")
-            result = await trading_agent.run(
-                """Analyze the EURUSD market on the 1-hour timeframe.
-                
-                Please:
-                1. Get the last 100 bars of price data
-                2. Get the current price
-                3. Identify the trend
-                4. Find key support and resistance levels
-                5. Provide a trading recommendation with risk assessment
-                """,
-                deps=deps
-            )
-            
-            print("\n📊 Market Analysis Results:")
-            print(f"Symbol: {result.data.symbol}")
-            print(f"Timeframe: {result.data.timeframe} minutes")
-            print(f"Trend: {result.data.trend}")
-            print(f"Support: {result.data.support_level}")
-            print(f"Resistance: {result.data.resistance_level}")
-            print(f"Recommendation: {result.data.recommendation}")
-            print(f"Risk Level: {result.data.risk_level}")
-            
-            # Shutdown MT5
-            await session.call_tool("shutdown", arguments={})
+            Return your analysis in the structured format.
+            """
+        )
+        
+        # Display results
+        print("\n📊 Market Analysis Results:")
+        print(f"Symbol: {result.output.symbol}")
+        print(f"Timeframe: {result.output.timeframe} minutes")
+        print(f"Trend: {result.output.trend}")
+        print(f"Support: {result.output.support_level}")
+        print(f"Resistance: {result.output.resistance_level}")
+        print(f"Recommendation: {result.output.recommendation}")
+        print(f"Risk Level: {result.output.risk_level}")
 
 # Run the analysis
 if __name__ == "__main__":
