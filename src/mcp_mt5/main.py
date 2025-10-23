@@ -109,7 +109,44 @@ class AccountInfo(BaseModel):
 
 
 class OrderRequest(BaseModel):
-    """Order request parameters"""
+    """
+    Order request parameters for placing trades.
+
+    Important: All type/action fields require INTEGER constants, not strings!
+
+    Fields:
+        action: Trade operation type as INTEGER:
+            - 1: TRADE_ACTION_DEAL (Execute deal immediately)
+            - 2: TRADE_ACTION_PENDING (Place pending order)
+            - 5: TRADE_ACTION_SLTP (Modify SL/TP)
+            - 6: TRADE_ACTION_MODIFY (Modify pending order)
+            - 8: TRADE_ACTION_REMOVE (Remove pending order)
+
+        symbol: Symbol name (e.g., "EURUSD", "XAUUSD")
+
+        volume: Trade volume in lots (e.g., 0.01, 0.1, 1.0)
+
+        type: Order type as INTEGER (NOT "market order" or "buy"):
+            - 0: ORDER_TYPE_BUY (Buy market order)
+            - 1: ORDER_TYPE_SELL (Sell market order)
+            - 2: ORDER_TYPE_BUY_LIMIT (Buy limit order)
+            - 3: ORDER_TYPE_SELL_LIMIT (Sell limit order)
+            - 4: ORDER_TYPE_BUY_STOP (Buy stop order)
+            - 5: ORDER_TYPE_SELL_STOP (Sell stop order)
+
+        price: Order price (use current ask/bid for market orders)
+
+        sl: Stop Loss price (optional)
+        tp: Take Profit price (optional)
+        deviation: Maximum price deviation in points (optional)
+        magic: Expert Advisor ID (optional)
+        comment: Order comment (optional, max 31 chars)
+        type_time: Order expiration type (optional)
+        type_filling: Order filling type as INTEGER (optional):
+            - 0: ORDER_FILLING_FOK (Fill or Kill)
+            - 1: ORDER_FILLING_IOC (Immediate or Cancel)
+            - 2: ORDER_FILLING_RETURN (Return remaining)
+    """
 
     action: int
     symbol: str
@@ -298,8 +335,22 @@ def initialize(path: str) -> bool:
     """
     Initialize the MetaTrader 5 terminal.
 
+    This MUST be called first before using any other MT5 tools.
+    Establishes connection to the MT5 terminal application.
+
+    Args:
+        path: Full path to the MT5 terminal executable.
+              Common paths:
+              - "C:\\Program Files\\MetaTrader 5\\terminal64.exe"
+              - "C:\\Program Files (x86)\\MetaTrader 5\\terminal64.exe"
+
     Returns:
         bool: True if initialization was successful, False otherwise.
+
+    Example:
+        # Initialize MT5 connection first
+        initialize(path="C:\\Program Files\\MetaTrader 5\\terminal64.exe")
+        # Now you can use other tools like get_account_info(), symbol_select(), etc.
     """
     if not mt5.initialize(path=path):
         logger.error(f"MT5 initialization failed, error code: {mt5.last_error()}")
@@ -329,13 +380,23 @@ def login(login: int, password: str, server: str) -> bool:
     """
     Log in to the MetaTrader 5 trading account.
 
+    Call this AFTER initialize() if you need to switch accounts or login programmatically.
+    Not required if MT5 terminal is already logged in to an account.
+
     Args:
-        login: Trading account number
-        password: Trading account password
-        server: Trading server name
+        login: Trading account number (integer, e.g., 12345678)
+        password: Trading account password (string)
+        server: Trading server name (e.g., "Demo-Server", "YourBroker-Live")
 
     Returns:
         bool: True if login was successful, False otherwise.
+
+    Example:
+        # First initialize MT5
+        initialize(path="C:\\Program Files\\MetaTrader 5\\terminal64.exe")
+        # Then login to your account
+        login(login=12345678, password="yourpassword", server="Demo-Server")
+        # Now you can use get_account_info(), place trades, etc.
     """
     if not mt5.login(login=login, password=password, server=server):
         logger.error(f"MT5 login failed, error code: {mt5.last_error()}")
@@ -351,13 +412,34 @@ def get_account_info() -> AccountInfo:
     """
     Get information about the current trading account.
 
+    Important: Requires MT5 to be initialized and logged in.
+    If this fails, ensure you have:
+    1. Called initialize() first
+    2. Logged in using login() if using a demo/live account
+    3. Have an active connection to the terminal
+
     Returns:
-        AccountInfo: Information about the trading account.
+        AccountInfo: Information about the trading account including balance, equity,
+                     margin, profit, etc.
+
+    Raises:
+        ValueError: If account info cannot be retrieved. Common causes:
+            - MT5 not initialized: Call initialize() first
+            - Not logged in: Call login() with your credentials
+            - Terminal not connected: Check MT5 connection status
     """
     account_info = mt5.account_info()
     if account_info is None:
-        logger.error(f"Failed to get account info, error code: {mt5.last_error()}")
-        raise ValueError("Failed to get account info")
+        error_code, error_msg = mt5.last_error()
+        logger.error(f"Failed to get account info, error: {error_code} - {error_msg}")
+        raise ValueError(
+            f"Failed to get account info. Error: {error_code} - {error_msg}. "
+            f"Possible causes:\n"
+            f"1. MT5 not initialized - Call initialize() first\n"
+            f"2. Not logged in - Call login() with your credentials\n"
+            f"3. Terminal not connected - Check MT5 terminal status\n"
+            f"4. No active trading account - Ensure an account is configured in MT5"
+        )
 
     # Convert named tuple to dictionary
     account_dict = account_info._asdict()
@@ -464,16 +546,30 @@ def get_symbol_info_tick(symbol: str) -> dict[str, Any]:
     """
     Get the latest tick data for a symbol.
 
+    Important: The symbol must be selected/visible in Market Watch.
+    If this fails, try calling symbol_select() first to add the symbol.
+
     Args:
-        symbol: Symbol name
+        symbol: Symbol name (e.g., "EURUSD", "XAUUSD", "GBPUSD")
 
     Returns:
-        Dict[str, Any]: Latest tick data for the symbol.
+        Dict[str, Any]: Latest tick data with fields: time, bid, ask, last, volume, etc.
+
+    Raises:
+        ValueError: If the symbol is not found or not selected in Market Watch.
+            Try calling symbol_select(symbol="{symbol}", visible=True) first.
     """
     tick = mt5.symbol_info_tick(symbol)
     if tick is None:
-        logger.error(f"Failed to get tick for symbol {symbol}, error code: {mt5.last_error()}")
-        raise ValueError(f"Failed to get tick for symbol {symbol}")
+        error_code, error_msg = mt5.last_error()
+        logger.error(f"Failed to get tick for symbol {symbol}, error: {error_code} - {error_msg}")
+        raise ValueError(
+            f"Failed to get tick for symbol {symbol}. "
+            f"Error: {error_code} - {error_msg}. "
+            f"The symbol may not be selected in Market Watch. "
+            f"Try calling symbol_select(symbol='{symbol}', visible=True) first, "
+            f"or check if the symbol name is correct and available with your broker."
+        )
 
     # Convert named tuple to dictionary
     return tick._asdict()
@@ -485,14 +581,22 @@ def symbol_select(symbol: str, visible: bool = True) -> bool:
     """
     Select a symbol in the Market Watch window or remove a symbol from it.
 
+    This is REQUIRED before you can get tick data or trade a symbol.
+    If get_symbol_info_tick() or other symbol operations fail, call this first.
+
     Args:
-        symbol: Symbol name
+        symbol: Symbol name (e.g., "EURUSD", "XAUUSD", "GBPUSD")
         visible: Symbol visibility flag
-            - True: Make the symbol visible in Market Watch
+            - True: Add/show the symbol in Market Watch (default, recommended)
             - False: Hide the symbol from Market Watch
 
     Returns:
         bool: True if the symbol is selected successfully, False otherwise.
+
+    Example:
+        # Before getting tick data for XAUUSD:
+        symbol_select(symbol="XAUUSD", visible=True)
+        tick = get_symbol_info_tick(symbol="XAUUSD")
     """
     result = mt5.symbol_select(symbol, visible)
     if not result:
@@ -802,23 +906,153 @@ def order_send(request: OrderRequest) -> OrderResult:
     """
     Send an order to the trade server.
 
+    CRITICAL REQUIREMENTS:
+    1. Pass order fields DIRECTLY - do NOT wrap in "request" key
+    2. Use INTEGER constants for action, type, type_filling - NO STRINGS
+    3. Volume is in LOTS (0.01, 0.1, 1.0), NOT contract units (100000)
+    4. Do NOT include unsupported fields like "group"
+    5. action must be 1 or 2 (NOT 0)
+
+    Common Mistakes to Avoid:
+    - ❌ {"request": {"action": 1, ...}} → ✅ {"action": 1, ...}
+    - ❌ "action": 0 → ✅ "action": 1 (for market) or 2 (for pending)
+    - ❌ "action": "buy" → ✅ "action": 1
+    - ❌ "type": "limit" → ✅ "type": 2
+    - ❌ "volume": 100000 → ✅ "volume": 0.1
+    - ❌ request: "{...json...}" → ✅ request: {...object...}
+
     Args:
-        request: Order parameters
+        request: OrderRequest object with these fields:
+            REQUIRED:
+            - action (int): 1=TRADE_ACTION_DEAL, 2=TRADE_ACTION_PENDING
+            - symbol (str): e.g., "EURUSD"
+            - volume (float): Lots, e.g., 0.01 (micro), 0.1 (mini), 1.0 (standard)
+            - type (int): 0=BUY, 1=SELL, 2=BUY_LIMIT, 3=SELL_LIMIT, etc.
+            - price (float): Order price
+
+            OPTIONAL (omit if not needed, don't set to None or 0):
+            - sl (float): Stop loss price
+            - tp (float): Take profit price
+            - deviation (int): Max price deviation in points
+            - magic (int): EA identifier
+            - comment (str): Max 31 characters
+            - type_time (int): Expiration type
+            - type_filling (int): 0=FOK, 1=IOC, 2=RETURN (omit to use default)
 
     Returns:
-        OrderResult: Order execution result.
+        OrderResult: Order execution result with return code, deal, order info.
+
+    Example 1 - Market Buy Order (with all optional fields):
+        {
+            "action": 1,
+            "symbol": "EURUSD",
+            "volume": 0.1,
+            "type": 0,
+            "price": 1.1850,
+            "sl": 1.1800,
+            "tp": 1.1900,
+            "deviation": 20,
+            "magic": 123456,
+            "comment": "Buy order",
+            "type_filling": 2
+        }
+
+    Example 2 - Market Buy Order (minimal - only required fields):
+        {
+            "action": 1,
+            "symbol": "EURUSD",
+            "volume": 0.1,
+            "type": 0,
+            "price": 1.1850
+        }
+
+    Example 3 - Buy Limit Order (pending):
+        {
+            "action": 2,
+            "symbol": "EURUSD",
+            "volume": 0.1,
+            "type": 2,
+            "price": 1.3000,
+            "sl": 1.2950,
+            "tp": 1.3050
+        }
+
+    WRONG - Do NOT do this:
+        {
+            "request": {          ← Extra nesting!
+                "action": 1,
+                ...
+            }
+        }
     """
-    # Convert request to dictionary
-    request_dict = request.model_dump()
+    # Convert request to dictionary and exclude None values
+    # MT5 doesn't accept None for optional parameters - they must be omitted entirely
+    request_dict = request.model_dump(exclude_none=True)
 
     # Send order
     result = mt5.order_send(request_dict)
     if result is None:
-        logger.error(f"Failed to send order, error code: {mt5.last_error()}")
-        raise ValueError("Failed to send order")
+        error_code, error_msg = mt5.last_error()
+        logger.error(f"Failed to send order, error: {error_code} - {error_msg}")
+        raise ValueError(
+            f"Failed to send order. MT5 Error {error_code}: {error_msg}\n"
+            f"Request: {request_dict}\n"
+            f"Common causes:\n"
+            f"- MT5 not initialized: Call initialize() first\n"
+            f"- Invalid symbol: Check symbol name and ensure it's selected\n"
+            f"- Invalid price: Ensure price is current (use get_symbol_info_tick)\n"
+            f"- Insufficient margin: Check account balance\n"
+            f"- Market closed: Check if trading is allowed\n"
+            f"- Auto-trading disabled: Enable in MT5 terminal\n"
+            f"- Invalid volume: Check min/max/step volume for the symbol"
+        )
 
     # Convert named tuple to dictionary
     result_dict = result._asdict()
+
+    # Check if order execution failed (retcode != 10009 means error)
+    # 10009 = TRADE_RETCODE_DONE (order placed successfully)
+    if result_dict.get("retcode") != 10009:
+        retcode = result_dict.get("retcode")
+        comment = result_dict.get("comment", "Unknown error")
+        logger.error(f"Order execution failed with retcode {retcode}: {comment}")
+
+        # Map common retcodes to helpful messages
+        retcode_messages = {
+            10004: "TRADE_RETCODE_REQUOTE - Requote. Price changed, retry with new price",
+            10006: "TRADE_RETCODE_REJECT - Request rejected by broker",
+            10007: "TRADE_RETCODE_CANCEL - Request canceled by trader",
+            10008: "TRADE_RETCODE_PLACED - Order placed (pending order)",
+            10010: "TRADE_RETCODE_DONE_PARTIAL - Only part of request completed",
+            10011: "TRADE_RETCODE_ERROR - Request processing error",
+            10012: "TRADE_RETCODE_TIMEOUT - Request timeout",
+            10013: "TRADE_RETCODE_INVALID - Invalid request",
+            10014: "TRADE_RETCODE_INVALID_VOLUME - Invalid volume",
+            10015: "TRADE_RETCODE_INVALID_PRICE - Invalid price",
+            10016: "TRADE_RETCODE_INVALID_STOPS - Invalid stops (SL/TP)",
+            10017: "TRADE_RETCODE_TRADE_DISABLED - Trading disabled",
+            10018: "TRADE_RETCODE_MARKET_CLOSED - Market is closed",
+            10019: "TRADE_RETCODE_NO_MONEY - Not enough money",
+            10020: "TRADE_RETCODE_PRICE_CHANGED - Price changed, retry",
+            10021: "TRADE_RETCODE_PRICE_OFF - No prices (broker not providing quotes)",
+            10022: "TRADE_RETCODE_INVALID_EXPIRATION - Invalid order expiration",
+            10023: "TRADE_RETCODE_ORDER_CHANGED - Order state changed",
+            10024: "TRADE_RETCODE_TOO_MANY_REQUESTS - Too many requests",
+            10025: "TRADE_RETCODE_NO_CHANGES - No changes in request",
+            10026: "TRADE_RETCODE_SERVER_DISABLES_AT - Autotrading disabled by server",
+            10027: "TRADE_RETCODE_CLIENT_DISABLES_AT - Autotrading disabled by client",
+            10028: "TRADE_RETCODE_LOCKED - Request locked for processing",
+            10029: "TRADE_RETCODE_FROZEN - Order/position frozen",
+            10030: "TRADE_RETCODE_INVALID_FILL - Invalid filling type",
+        }
+
+        detailed_msg = retcode_messages.get(retcode, f"Unknown retcode {retcode}")
+        raise ValueError(
+            f"Order execution failed: {detailed_msg}\n"
+            f"Comment from broker: {comment}\n"
+            f"Request: {request_dict}\n"
+            f"Result: {result_dict}"
+        )
 
     # Convert request named tuple to dictionary if needed
     if hasattr(result_dict["request"], "_asdict"):
@@ -833,20 +1067,55 @@ def order_check(request: OrderRequest) -> dict[str, Any]:
     """
     Check if an order can be placed with the specified parameters.
 
+    Use this BEFORE order_send() to validate the order without executing it.
+    Follows the same requirements as order_send():
+    - request must be an OBJECT (dict), not a JSON string
+    - Use INTEGER constants for action, type, type_filling
+    - Volume in LOTS (0.01, 0.1, 1.0), not contract units
+
     Args:
-        request: Order parameters
+        request: OrderRequest object (same format as order_send)
+                See order_send() documentation for field details and examples.
 
     Returns:
-        Dict[str, Any]: Order check result.
+        Dict[str, Any]: Order check result with retcode, balance, equity, margin, etc.
+            - retcode: 0 if check passed, error code otherwise
+            - balance: Account balance after order
+            - equity: Account equity after order
+            - margin: Required margin
+            - margin_free: Free margin after order
+            - comment: Error description if check failed
+
+    Example:
+        # Check before sending
+        result = order_check(request={
+            "action": 1,
+            "symbol": "EURUSD",
+            "volume": 0.1,
+            "type": 0,
+            "price": 1.1850,
+            "type_filling": 2
+        })
+        if result["retcode"] == 0:
+            # OK to send the order
+            order_send(request={...})
     """
-    # Convert request to dictionary
-    request_dict = request.model_dump()
+    # Convert request to dictionary and exclude None values
+    # MT5 doesn't accept None for optional parameters - they must be omitted entirely
+    request_dict = request.model_dump(exclude_none=True)
 
     # Check order
     result = mt5.order_check(request_dict)
     if result is None:
-        logger.error(f"Failed to check order, error code: {mt5.last_error()}")
-        raise ValueError("Failed to check order")
+        error_code, error_msg = mt5.last_error()
+        logger.error(f"Failed to check order, error: {error_code} - {error_msg}")
+        raise ValueError(
+            f"Failed to check order. MT5 Error {error_code}: {error_msg}\n"
+            f"Request: {request_dict}\n"
+            f"Common causes:\n"
+            f"- MT5 not initialized: Call initialize() first\n"
+            f"- Invalid parameters: Check symbol, volume, price, etc."
+        )
 
     # Convert named tuple to dictionary
     result_dict = result._asdict()
