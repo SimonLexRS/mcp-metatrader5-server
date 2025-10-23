@@ -5,7 +5,7 @@ from typing import Any
 import MetaTrader5 as mt5
 import pandas as pd
 from fastmcp import FastMCP
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 logger = logging.getLogger(__name__)
 
@@ -160,6 +160,34 @@ class OrderRequest(BaseModel):
     comment: str | None = None
     type_time: int | None = None
     type_filling: int | None = None
+
+    @field_validator("volume")
+    @classmethod
+    def _vol_positive(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("volume must be > 0 (in lots)")
+        return v
+
+    @field_validator("comment")
+    @classmethod
+    def _comment_len(cls, v: str | None) -> str | None:
+        if v is not None and len(v) > 31:
+            raise ValueError("comment must be <= 31 characters")
+        return v
+
+    @field_validator("action")
+    @classmethod
+    def _action_valid(cls, v: int) -> int:
+        allowed = {
+            mt5.TRADE_ACTION_DEAL,
+            mt5.TRADE_ACTION_PENDING,
+            mt5.TRADE_ACTION_SLTP,
+            mt5.TRADE_ACTION_MODIFY,
+            mt5.TRADE_ACTION_REMOVE,
+        }
+        if v not in allowed:
+            raise ValueError(f"action must be one of {sorted(allowed)}")
+        return v
 
 
 class OrderResult(BaseModel):
@@ -1010,40 +1038,44 @@ def order_send(request: OrderRequest) -> OrderResult:
     # Convert named tuple to dictionary
     result_dict = result._asdict()
 
-    # Check if order execution failed (retcode != 10009 means error)
-    # 10009 = TRADE_RETCODE_DONE (order placed successfully)
-    if result_dict.get("retcode") != 10009:
-        retcode = result_dict.get("retcode")
+    # Define MT5 success retcodes - these are NOT errors
+    success_retcodes = {
+        mt5.TRADE_RETCODE_DONE,  # 10009 - Order placed successfully (market order)
+        mt5.TRADE_RETCODE_PLACED,  # 10008 - Order placed (pending order)
+        mt5.TRADE_RETCODE_DONE_PARTIAL,  # 10010 - Partial fill (rest canceled)
+    }
+
+    # Check if order execution failed (retcode not in success set)
+    retcode = result_dict.get("retcode")
+    if retcode not in success_retcodes:
         comment = result_dict.get("comment", "Unknown error")
         logger.error(f"Order execution failed with retcode {retcode}: {comment}")
 
-        # Map common retcodes to helpful messages
+        # Map common error retcodes to helpful messages
         retcode_messages = {
-            10004: "TRADE_RETCODE_REQUOTE - Requote. Price changed, retry with new price",
-            10006: "TRADE_RETCODE_REJECT - Request rejected by broker",
-            10007: "TRADE_RETCODE_CANCEL - Request canceled by trader",
-            10008: "TRADE_RETCODE_PLACED - Order placed (pending order)",
-            10010: "TRADE_RETCODE_DONE_PARTIAL - Only part of request completed",
-            10011: "TRADE_RETCODE_ERROR - Request processing error",
-            10012: "TRADE_RETCODE_TIMEOUT - Request timeout",
-            10013: "TRADE_RETCODE_INVALID - Invalid request",
-            10014: "TRADE_RETCODE_INVALID_VOLUME - Invalid volume",
-            10015: "TRADE_RETCODE_INVALID_PRICE - Invalid price",
-            10016: "TRADE_RETCODE_INVALID_STOPS - Invalid stops (SL/TP)",
-            10017: "TRADE_RETCODE_TRADE_DISABLED - Trading disabled",
-            10018: "TRADE_RETCODE_MARKET_CLOSED - Market is closed",
-            10019: "TRADE_RETCODE_NO_MONEY - Not enough money",
-            10020: "TRADE_RETCODE_PRICE_CHANGED - Price changed, retry",
-            10021: "TRADE_RETCODE_PRICE_OFF - No prices (broker not providing quotes)",
-            10022: "TRADE_RETCODE_INVALID_EXPIRATION - Invalid order expiration",
-            10023: "TRADE_RETCODE_ORDER_CHANGED - Order state changed",
-            10024: "TRADE_RETCODE_TOO_MANY_REQUESTS - Too many requests",
-            10025: "TRADE_RETCODE_NO_CHANGES - No changes in request",
-            10026: "TRADE_RETCODE_SERVER_DISABLES_AT - Autotrading disabled by server",
-            10027: "TRADE_RETCODE_CLIENT_DISABLES_AT - Autotrading disabled by client",
-            10028: "TRADE_RETCODE_LOCKED - Request locked for processing",
-            10029: "TRADE_RETCODE_FROZEN - Order/position frozen",
-            10030: "TRADE_RETCODE_INVALID_FILL - Invalid filling type",
+            mt5.TRADE_RETCODE_REQUOTE: "TRADE_RETCODE_REQUOTE - Requote. Price changed, retry with new price",
+            mt5.TRADE_RETCODE_REJECT: "TRADE_RETCODE_REJECT - Request rejected by broker",
+            mt5.TRADE_RETCODE_CANCEL: "TRADE_RETCODE_CANCEL - Request canceled by trader",
+            mt5.TRADE_RETCODE_ERROR: "TRADE_RETCODE_ERROR - Request processing error",
+            mt5.TRADE_RETCODE_TIMEOUT: "TRADE_RETCODE_TIMEOUT - Request timeout",
+            mt5.TRADE_RETCODE_INVALID: "TRADE_RETCODE_INVALID - Invalid request",
+            mt5.TRADE_RETCODE_INVALID_VOLUME: "TRADE_RETCODE_INVALID_VOLUME - Invalid volume",
+            mt5.TRADE_RETCODE_INVALID_PRICE: "TRADE_RETCODE_INVALID_PRICE - Invalid price",
+            mt5.TRADE_RETCODE_INVALID_STOPS: "TRADE_RETCODE_INVALID_STOPS - Invalid stops (SL/TP)",
+            mt5.TRADE_RETCODE_TRADE_DISABLED: "TRADE_RETCODE_TRADE_DISABLED - Trading disabled",
+            mt5.TRADE_RETCODE_MARKET_CLOSED: "TRADE_RETCODE_MARKET_CLOSED - Market is closed",
+            mt5.TRADE_RETCODE_NO_MONEY: "TRADE_RETCODE_NO_MONEY - Not enough money",
+            mt5.TRADE_RETCODE_PRICE_CHANGED: "TRADE_RETCODE_PRICE_CHANGED - Price changed, retry",
+            mt5.TRADE_RETCODE_PRICE_OFF: "TRADE_RETCODE_PRICE_OFF - No prices (broker not providing quotes)",
+            mt5.TRADE_RETCODE_INVALID_EXPIRATION: "TRADE_RETCODE_INVALID_EXPIRATION - Invalid order expiration",
+            mt5.TRADE_RETCODE_ORDER_CHANGED: "TRADE_RETCODE_ORDER_CHANGED - Order state changed",
+            mt5.TRADE_RETCODE_TOO_MANY_REQUESTS: "TRADE_RETCODE_TOO_MANY_REQUESTS - Too many requests",
+            mt5.TRADE_RETCODE_NO_CHANGES: "TRADE_RETCODE_NO_CHANGES - No changes in request",
+            mt5.TRADE_RETCODE_SERVER_DISABLES_AT: "TRADE_RETCODE_SERVER_DISABLES_AT - Autotrading disabled by server",
+            mt5.TRADE_RETCODE_CLIENT_DISABLES_AT: "TRADE_RETCODE_CLIENT_DISABLES_AT - Autotrading disabled by client",
+            mt5.TRADE_RETCODE_LOCKED: "TRADE_RETCODE_LOCKED - Request locked for processing",
+            mt5.TRADE_RETCODE_FROZEN: "TRADE_RETCODE_FROZEN - Order/position frozen",
+            mt5.TRADE_RETCODE_INVALID_FILL: "TRADE_RETCODE_INVALID_FILL - Invalid filling type",
         }
 
         detailed_msg = retcode_messages.get(retcode, f"Unknown retcode {retcode}")
