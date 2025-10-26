@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  mt5-mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mt5-mcp-server:latest
+    container_name: mt5-mcp-server
+    ports:
+      - "${NODE_PORT:-8080}:8080"
+    environment:
+      # Node.js Server Configuration
+      NODE_PORT: ${NODE_PORT:-8080}
+      NODE_ENV: ${NODE_ENV:-production}
+      AUTH_TOKEN: ${AUTH_TOKEN}
+
+      # Python Configuration
+      PYTHON_EXECUTABLE: ${PYTHON_EXECUTABLE:-python}
+      PYTHONPATH: C:\app\src
+
+      # MetaTrader 5 Configuration
+      MT5_PATH: ${MT5_PATH}
+      MT5_LOGIN: ${MT5_LOGIN}
+      MT5_PASSWORD: ${MT5_PASSWORD}
+      MT5_SERVER: ${MT5_SERVER}
+      MT5_AUTO_CONNECT: ${MT5_AUTO_CONNECT:-true}
+
+    # Health check configuration
+    healthcheck:
+      test: ["CMD", "powershell", "-Command", "try { $response = Invoke-WebRequest -Uri http://localhost:8080/health -UseBasicParsing; exit 0 } catch { exit 1 }"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Resource limits (adjust based on your needs)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Volumes for MetaTrader 5 data persistence (optional)
+    # Uncomment if you want to persist MT5 data
+    # volumes:
+    #   - mt5-data:C:\Users\ContainerAdministrator\AppData\Roaming\MetaQuotes
+
+    # Networks
+    networks:
+      - mt5-network
+
+networks:
+  mt5-network:
+    driver: bridge
+
+# Uncomment if using persistent volumes
+# volumes:
+#   mt5-data:
+#     driver: local

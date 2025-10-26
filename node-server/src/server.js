@@ -108,7 +108,43 @@ const server = createServer(async (req, res) => {
       requireAuth,
       uptimeSeconds: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
+      nodeVersion: process.version,
+      platform: process.platform,
     });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/health/detailed") {
+    try {
+      const version = await runTool({ tool: "get_version", params: {} });
+      jsonResponse(res, 200, {
+        status: "ok",
+        healthy: true,
+        requireAuth,
+        uptimeSeconds: Math.floor(process.uptime()),
+        timestamp: new Date().toISOString(),
+        nodeVersion: process.version,
+        platform: process.platform,
+        mt5: {
+          available: true,
+          version: version,
+        },
+      });
+    } catch (error) {
+      jsonResponse(res, 503, {
+        status: "degraded",
+        healthy: false,
+        requireAuth,
+        uptimeSeconds: Math.floor(process.uptime()),
+        timestamp: new Date().toISOString(),
+        nodeVersion: process.version,
+        platform: process.platform,
+        mt5: {
+          available: false,
+          error: error.message,
+        },
+      });
+    }
     return;
   }
 

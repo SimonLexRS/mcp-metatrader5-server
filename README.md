@@ -16,16 +16,9 @@ A Model Context Protocol (MCP) server for MetaTrader 5, allowing AI assistants t
 - Analyze trading history
 - Integrate with AI assistants through the Model Context Protocol
 
-## Node.js HTTP Wrapper (n8n Compatible)
+## Deployment Options
 
-This repository includes a lightweight Node.js service under `node-server/` that exposes the MCP tools over HTTP for automation platforms like n8n. The service offers:
-
-- Header-based authentication via the `Auth` header (configure `AUTH_TOKEN` in `.env`)
-- REST endpoint `POST /v1/tools/<toolName>` for single-response executions
-- Streaming endpoint `POST /v1/tools/<toolName>/stream` using NDJSON (`application/x-ndjson`) suitable for n8n's HTTP Streamable nodes
-- `/health` endpoint for status checks
-
-### Quick Start
+### Quick Start (Development)
 
 ```bash
 cd node-server
@@ -36,16 +29,77 @@ node src/server.js
 
 The server launches on the port specified by `NODE_PORT` (default `8080`). Every request must include the header `Auth: <AUTH_TOKEN>`.
 
-### Docker
+### Dokploy Deployment (Recommended for Production)
 
-A Windows Server Core based Docker image is provided to simplify deployments on platforms like Dockploy:
+Deploy easily on Dokploy with one-click setup:
 
+```bash
+# 1. Clone and configure
+git clone https://github.com/Qoyyuum/mcp-metatrader5-server.git
+cd mcp-metatrader5-server
+cp .env.production.example .env
+
+# 2. Configure environment variables in Dokploy UI
+# 3. Deploy using dokploy.yaml configuration
+```
+
+**Key Features:**
+- Automated Docker builds
+- Health checks with MT5 validation
+- SSL/TLS support via Let's Encrypt
+- Environment-based secrets management
+- Auto-restart on failure
+- Resource limits and monitoring
+
+**See [DEPLOYMENT.md](DEPLOYMENT.md) for complete Dokploy setup guide.**
+
+### Docker Deployment
+
+A Windows Server Core based Docker image is provided:
+
+**Using Docker Compose (recommended):**
+```bash
+docker-compose up -d
+```
+
+**Using Docker directly:**
 ```bash
 docker build -t mt5-mcp-node .
 docker run --rm -p 8080:8080 --env-file node-server/.env mt5-mcp-node
 ```
 
 > **Important:** The official `MetaTrader5` Python package (and the terminal itself) only run on Windows. Ensure the container hosts the MetaTrader 5 terminal binaries at the path referenced by `MT5_PATH`.
+
+## Node.js HTTP Wrapper (n8n Compatible)
+
+This repository includes a lightweight Node.js service under `node-server/` that exposes the MCP tools over HTTP for automation platforms like n8n. The service offers:
+
+- **Header-based authentication** via the `Auth` header (configure `AUTH_TOKEN` in `.env`)
+- **REST endpoint** `POST /v1/tools/<toolName>` for single-response executions
+- **Streaming endpoint** `POST /v1/tools/<toolName>/stream` using NDJSON (`application/x-ndjson`) suitable for n8n's HTTP Request Streamable nodes
+- **Health endpoints**:
+  - `/health` - Basic server status (fast, no MT5 check)
+  - `/health/detailed` - Full health check including MT5 connectivity
+
+### n8n Integration
+
+Perfect for building automated trading workflows in n8n:
+
+**Example n8n Workflow:**
+1. Add **HTTP Request** node
+2. Configure authentication with `Auth` header
+3. POST to `http://your-server:8080/v1/tools/<tool-name>`
+4. Process MT5 market data, place trades, monitor positions
+5. Connect to Slack, Telegram, databases, and more
+
+**Features:**
+- 44+ MT5 tools available via HTTP
+- Streaming support for large data sets
+- Real-time position monitoring
+- Automated trade execution
+- Market data analysis and alerts
+
+**See [N8N_INTEGRATION.md](N8N_INTEGRATION.md) for detailed integration guide with examples.**
 
 ## Installation
 

@@ -1,0 +1,115 @@
+---
+# Dokploy Configuration for MetaTrader 5 MCP Server
+# This file configures the deployment settings for Dokploy platform
+# Documentation: https://docs.dokploy.com
+
+name: mt5-mcp-server
+type: application
+
+# Build Configuration
+build:
+  type: dockerfile
+  dockerfile: Dockerfile
+  context: .
+  args: []
+
+# Deployment Configuration
+deploy:
+  # Port mapping
+  ports:
+    - target: 8080
+      published: 8080
+      protocol: tcp
+
+  # Environment Variables (Set these in Dokploy UI or via secrets)
+  env:
+    - NODE_PORT=8080
+    - NODE_ENV=production
+    # AUTH_TOKEN should be set as a secret in Dokploy UI
+    # MT5_PATH should be set as a secret in Dokploy UI
+    # MT5_LOGIN should be set as a secret in Dokploy UI
+    # MT5_PASSWORD should be set as a secret in Dokploy UI
+    # MT5_SERVER should be set as a secret in Dokploy UI
+    - MT5_AUTO_CONNECT=true
+    - PYTHON_EXECUTABLE=python
+
+  # Health Check Configuration
+  healthcheck:
+    type: http
+    path: /health
+    port: 8080
+    interval: 30s
+    timeout: 10s
+    retries: 3
+    start_period: 40s
+
+  # Resource Limits
+  resources:
+    limits:
+      cpus: 2.0
+      memory: 4096M
+    reservations:
+      cpus: 1.0
+      memory: 2048M
+
+  # Restart Policy
+  restart_policy:
+    condition: unless-stopped
+    delay: 5s
+    max_attempts: 3
+
+  # Scaling (for single-instance deployment)
+  replicas: 1
+
+# Volumes Configuration (Optional - for MT5 data persistence)
+# Uncomment if you need to persist MetaTrader 5 configuration
+# volumes:
+#   - name: mt5-data
+#     path: C:\Users\ContainerAdministrator\AppData\Roaming\MetaQuotes
+#     type: volume
+
+# Network Configuration
+network:
+  mode: bridge
+
+# Logging Configuration
+logging:
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+# Domain Configuration (Configure in Dokploy UI)
+# domains:
+#   - domain: mt5-mcp.yourdomain.com
+#     ssl: true
+#     ssl_provider: letsencrypt
+
+# Secrets Configuration
+# Configure these sensitive values in Dokploy UI under "Environment Variables" or "Secrets"
+secrets:
+  - AUTH_TOKEN
+  - MT5_PATH
+  - MT5_LOGIN
+  - MT5_PASSWORD
+  - MT5_SERVER
+
+# Monitoring Configuration
+monitoring:
+  enabled: true
+  metrics:
+    - type: http_requests
+      path: /health
+
+# Backup Configuration (Optional)
+# backup:
+#   enabled: false
+#   schedule: "0 2 * * *"  # Daily at 2 AM
+#   retention: 7  # Keep 7 days of backups
+
+# Notes:
+# 1. This requires a Windows-capable host since MT5 only runs on Windows
+# 2. Ensure MetaTrader 5 terminal is properly installed and licensed
+# 3. Set all secret values in Dokploy UI before deployment
+# 4. The AUTH_TOKEN should be a strong, randomly generated token
+# 5. Test the health endpoint after deployment: http://your-domain:8080/health
