@@ -31,42 +31,92 @@ The server launches on the port specified by `NODE_PORT` (default `8080`). Every
 
 ### Dokploy Deployment (Recommended for Production)
 
-Deploy easily on Dokploy with **hybrid architecture** (Linux + Windows):
+Deploy easily on Dokploy with **multiple architecture options**:
+
+#### Option A: Wine (All-in-One Linux) - For Development ⚠️
+
+Run everything in a single Linux container using Wine:
 
 ```bash
-# 1. Deploy HTTP server on Dokploy (Linux)
+# Uses Dockerfile.wine
+# MT5 runs via Wine emulation
+# Good for: Development, testing
+# Not recommended for: Production (stability issues)
+```
+
+**Quick Setup:**
+1. Use `Dockerfile.wine` in Dokploy build settings
+2. Configure MT5 credentials in environment variables
+3. Deploy and wait (~10-15 min first time for Wine setup)
+
+**Limitations:**
+- Slower performance (emulation overhead)
+- Some MT5 features may not work
+- Higher resource usage
+- Less stable than native Windows
+
+**See [LINUX_WITHOUT_WINDOWS.md](LINUX_WITHOUT_WINDOWS.md) for complete Wine setup.**
+
+#### Option B: Hybrid (Linux + Windows) - For Production ✅
+
+Recommended for production deployments:
+
+```bash
+# 1. Deploy HTTP server on Dokploy (Linux) - Dockerfile.linux
 # 2. Run Windows bridge server on Windows machine
 # 3. Connect the two via HTTP
 ```
 
-**Hybrid Architecture** (Recommended):
+**Architecture:**
 - **Linux Dokploy**: Runs the HTTP API server (Dockerfile.linux)
-- **Windows Machine**: Runs MT5 terminal + bridge server
+- **Windows Machine**: Runs MT5 terminal + bridge server (VPS or local PC)
 - **Connection**: HTTP communication between Linux and Windows
 
 **Why Hybrid?**
 - ✅ Deploy on any Linux server (Dokploy typically runs on Linux)
-- ✅ MT5 runs natively on Windows (more stable)
+- ✅ MT5 runs natively on Windows (much more stable)
 - ✅ Scale independently
-- ✅ Use existing Windows infrastructure
+- ✅ Better performance and reliability
 
 **Quick Setup:**
 1. Deploy to Dokploy using `Dockerfile.linux`
 2. Set `MT5_BRIDGE_URL=http://your-windows-ip:5555`
-3. Run Windows bridge server (see [HYBRID_DEPLOYMENT.md](HYBRID_DEPLOYMENT.md))
+3. Run Windows bridge server (see guides below)
 4. Configure environment variables in Dokploy UI
 
-**Key Features:**
-- Automated Docker builds
-- Health checks with MT5 validation
-- SSL/TLS support via Let's Encrypt
-- Environment-based secrets management
-- Auto-restart on failure
-- Resource limits and monitoring
-- Hybrid Linux+Windows architecture support
+**Windows Options:**
+- **VPS Windows** ($5-15/month) - Contabo, Vultr, AWS
+- **PC Windows at home** (Free if you have one)
+- **AWS/Azure Free Tier** (12 months free)
 
 **See [HYBRID_DEPLOYMENT.md](HYBRID_DEPLOYMENT.md) for complete hybrid setup guide.**
+**See [LINUX_WITHOUT_WINDOWS.md](LINUX_WITHOUT_WINDOWS.md) if you don't have Windows.**
+
+#### Option C: Windows Only (Windows Docker Host)
+
+If your Dokploy runs on Windows (rare):
+
+```bash
+# Uses original Dockerfile (Windows Server Core)
+# Requires Windows-capable Docker host
+# All-in-one solution on Windows
+```
+
 **See [DEPLOYMENT.md](DEPLOYMENT.md) for standard deployment options.**
+
+---
+
+### Which Option Should I Choose?
+
+```
+Do you have access to a Windows machine?
+├─ NO → Use Wine (Dockerfile.wine) for testing
+│        OR rent Windows VPS ($5-15/mo) for production
+│
+└─ YES → Use Hybrid Architecture (Dockerfile.linux + Windows bridge)
+         - Most stable and performant option
+         - Best for production
+```
 
 ### Docker Deployment
 

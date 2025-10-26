@@ -1,0 +1,91 @@
+# MetaTrader 5 MCP Server - Linux with Wine
+# This Dockerfile runs MT5 using Wine on Linux (Ubuntu)
+# Allows full deployment on Linux without Windows dependency
+#
+# Note: Wine emulation may have limitations:
+# - Slower than native Windows
+# - Some MT5 features may not work perfectly
+# - Requires more resources
+# - Display/GUI issues (we run headless with Xvfb)
+#
+# For production, consider a small Windows VPS instead
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV WINEARCH=win64
+ENV WINEPREFIX=/root/.wine
+ENV DISPLAY=:99
+
+# Install Wine, Python, Node.js and dependencies
+RUN apt-get update && apt-get install -y \
+    software-properties-common \
+    wget \
+    curl \
+    gnupg2 \
+    cabextract \
+    xvfb \
+    x11vnc \
+    && dpkg --add-architecture i386 \
+    && mkdir -pm755 /etc/apt/keyrings \
+    && wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key \
+    && wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/jammy/winehq-jammy.sources \
+    && apt-get update \
+    && apt-get install -y --install-recommends winehq-stable \
+    && apt-get install -y \
+    python3.11 \
+    python3-pip \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install winetricks for additional Windows components
+RUN wget https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks \
+    && chmod +x winetricks \
+    && mv winetricks /usr/local/bin/
+
+WORKDIR /app
+
+# Copy Python package files
+COPY pyproject.toml ./
+COPY uv.lock ./
+COPY src ./src
+
+# Install Python dependencies
+RUN python3 -m pip install --no-cache-dir --upgrade pip \
+    && python3 -m pip install --no-cache-dir .
+
+# Copy Node.js server files
+COPY node-server ./node-server
+
+WORKDIR /app/node-server
+
+# Install Node.js dependencies
+RUN if [ -f package.json ]; then npm install --omit=dev; fi
+
+# Copy Wine setup script
+COPY docker/setup-wine-mt5.sh /app/setup-wine-mt5.sh
+RUN chmod +x /app/setup-wine-mt5.sh
+
+# Copy startup script
+COPY docker/start-server-wine.sh /app/start-server.sh
+RUN chmod +x /app/start-server.sh
+
+# Environment variables
+ENV NODE_ENV=production
+ENV NODE_PORT=8080
+ENV PYTHONPATH=/app/src
+ENV PYTHON_EXECUTABLE=python3
+
+# Note: MT5 will be installed on first run via setup script
+# You can also pre-install by running setup-wine-mt5.sh during build
+
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=120s \
+  CMD curl -f http://localhost:8080/health || exit 1
+
+# Start Xvfb (virtual display) and the server
+CMD ["/app/start-server.sh"]
