@@ -1,0 +1,11 @@
+{
+  "name": "mt5-mcp-node-server",
+  "version": "0.1.0",
+  "description": "HTTP wrapper for MetaTrader 5 MCP server with n8n-compatible streaming support.",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {}
+}

@@ -16,6 +16,37 @@ A Model Context Protocol (MCP) server for MetaTrader 5, allowing AI assistants t
 - Analyze trading history
 - Integrate with AI assistants through the Model Context Protocol
 
+## Node.js HTTP Wrapper (n8n Compatible)
+
+This repository includes a lightweight Node.js service under `node-server/` that exposes the MCP tools over HTTP for automation platforms like n8n. The service offers:
+
+- Header-based authentication via the `Auth` header (configure `AUTH_TOKEN` in `.env`)
+- REST endpoint `POST /v1/tools/<toolName>` for single-response executions
+- Streaming endpoint `POST /v1/tools/<toolName>/stream` using NDJSON (`application/x-ndjson`) suitable for n8n's HTTP Streamable nodes
+- `/health` endpoint for status checks
+
+### Quick Start
+
+```bash
+cd node-server
+cp .env.example .env
+# configure MT5_PATH, MT5_LOGIN, MT5_PASSWORD, MT5_SERVER, AUTH_TOKEN, etc.
+node src/server.js
+```
+
+The server launches on the port specified by `NODE_PORT` (default `8080`). Every request must include the header `Auth: <AUTH_TOKEN>`.
+
+### Docker
+
+A Windows Server Core based Docker image is provided to simplify deployments on platforms like Dockploy:
+
+```bash
+docker build -t mt5-mcp-node .
+docker run --rm -p 8080:8080 --env-file node-server/.env mt5-mcp-node
+```
+
+> **Important:** The official `MetaTrader5` Python package (and the terminal itself) only run on Windows. Ensure the container hosts the MetaTrader 5 terminal binaries at the path referenced by `MT5_PATH`.
+
 ## Installation
 
 ### From PyPI 
