@@ -31,17 +31,30 @@ The server launches on the port specified by `NODE_PORT` (default `8080`). Every
 
 ### Dokploy Deployment (Recommended for Production)
 
-Deploy easily on Dokploy with one-click setup:
+Deploy easily on Dokploy with **hybrid architecture** (Linux + Windows):
 
 ```bash
-# 1. Clone and configure
-git clone https://github.com/Qoyyuum/mcp-metatrader5-server.git
-cd mcp-metatrader5-server
-cp .env.production.example .env
-
-# 2. Configure environment variables in Dokploy UI
-# 3. Deploy using dokploy.yaml configuration
+# 1. Deploy HTTP server on Dokploy (Linux)
+# 2. Run Windows bridge server on Windows machine
+# 3. Connect the two via HTTP
 ```
+
+**Hybrid Architecture** (Recommended):
+- **Linux Dokploy**: Runs the HTTP API server (Dockerfile.linux)
+- **Windows Machine**: Runs MT5 terminal + bridge server
+- **Connection**: HTTP communication between Linux and Windows
+
+**Why Hybrid?**
+- ✅ Deploy on any Linux server (Dokploy typically runs on Linux)
+- ✅ MT5 runs natively on Windows (more stable)
+- ✅ Scale independently
+- ✅ Use existing Windows infrastructure
+
+**Quick Setup:**
+1. Deploy to Dokploy using `Dockerfile.linux`
+2. Set `MT5_BRIDGE_URL=http://your-windows-ip:5555`
+3. Run Windows bridge server (see [HYBRID_DEPLOYMENT.md](HYBRID_DEPLOYMENT.md))
+4. Configure environment variables in Dokploy UI
 
 **Key Features:**
 - Automated Docker builds
@@ -50,8 +63,10 @@ cp .env.production.example .env
 - Environment-based secrets management
 - Auto-restart on failure
 - Resource limits and monitoring
+- Hybrid Linux+Windows architecture support
 
-**See [DEPLOYMENT.md](DEPLOYMENT.md) for complete Dokploy setup guide.**
+**See [HYBRID_DEPLOYMENT.md](HYBRID_DEPLOYMENT.md) for complete hybrid setup guide.**
+**See [DEPLOYMENT.md](DEPLOYMENT.md) for standard deployment options.**
 
 ### Docker Deployment
 

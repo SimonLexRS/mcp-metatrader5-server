@@ -1,0 +1,54 @@
+# Linux-based Dockerfile for MetaTrader 5 MCP Server
+# This version runs the HTTP server on Linux and connects to MT5 running on a Windows machine
+#
+# Architecture:
+# [Dokploy Linux] -> Node.js HTTP Server -> Python Bridge -> [Remote Windows MT5]
+#
+# Requirements:
+# - MT5 must be running on a Windows machine (can be remote)
+# - Network connectivity between Linux and Windows machine
+# - MT5 Python package works via network connection
+
+FROM node:20-alpine
+
+# Install Python 3.11 and required dependencies
+RUN apk add --no-cache \
+    python3=~3.11 \
+    py3-pip \
+    && python3 -m pip install --upgrade pip
+
+WORKDIR /app
+
+# Copy Python package files
+COPY pyproject.toml ./
+COPY uv.lock ./
+COPY src ./src
+
+# Install Python dependencies
+# Note: MetaTrader5 package will be installed but MT5 terminal connection
+# will need to be configured for remote Windows machine
+RUN python3 -m pip install --no-cache-dir .
+
+# Copy Node.js server files
+COPY node-server ./node-server
+
+WORKDIR /app/node-server
+
+# Install Node.js dependencies (zero deps, but keep for future)
+RUN if [ -f package.json ]; then npm install --omit=dev; fi
+
+# Environment variables
+ENV NODE_ENV=production
+ENV NODE_PORT=8080
+ENV PYTHONPATH=/app/src
+ENV PYTHON_EXECUTABLE=python3
+
+# Expose HTTP port
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=40s \
+  CMD node -e "require('http').get('http://localhost:8080/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
+
+# Start the Node.js HTTP server
+CMD ["node", "src/server.js"]

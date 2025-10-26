@@ -9,7 +9,9 @@ type: application
 # Build Configuration
 build:
   type: dockerfile
-  dockerfile: Dockerfile
+  # Use Dockerfile.linux for Linux hosts (default for most Dokploy installations)
+  # Use Dockerfile for Windows hosts with Windows container support
+  dockerfile: Dockerfile.linux
   context: .
   args: []
 
@@ -25,13 +27,19 @@ deploy:
   env:
     - NODE_PORT=8080
     - NODE_ENV=production
+    - PYTHON_EXECUTABLE=python3
     # AUTH_TOKEN should be set as a secret in Dokploy UI
+    # For hybrid deployment (Linux + Windows):
+    # - Set MT5_BRIDGE_URL to your Windows bridge server URL
+    # - Set MT5_BRIDGE_TOKEN to match the Windows bridge AUTH_TOKEN
+    # MT5_BRIDGE_URL should be set as config in Dokploy UI (e.g., http://192.168.1.100:5555)
+    # MT5_BRIDGE_TOKEN should be set as a secret in Dokploy UI
+    # For local deployment (Windows only) - not supported on Linux hosts:
     # MT5_PATH should be set as a secret in Dokploy UI
     # MT5_LOGIN should be set as a secret in Dokploy UI
     # MT5_PASSWORD should be set as a secret in Dokploy UI
     # MT5_SERVER should be set as a secret in Dokploy UI
-    - MT5_AUTO_CONNECT=true
-    - PYTHON_EXECUTABLE=python
+    # MT5_AUTO_CONNECT=true
 
   # Health Check Configuration
   healthcheck:
@@ -87,12 +95,16 @@ logging:
 
 # Secrets Configuration
 # Configure these sensitive values in Dokploy UI under "Environment Variables" or "Secrets"
+# For hybrid deployment (Linux host + Windows bridge):
 secrets:
-  - AUTH_TOKEN
-  - MT5_PATH
-  - MT5_LOGIN
-  - MT5_PASSWORD
-  - MT5_SERVER
+  - AUTH_TOKEN           # Token for API authentication
+  - MT5_BRIDGE_URL       # URL of Windows bridge server (e.g., http://192.168.1.100:5555)
+  - MT5_BRIDGE_TOKEN     # Authentication token for Windows bridge
+  # For Windows-only deployment (not applicable for Linux hosts):
+  # - MT5_PATH
+  # - MT5_LOGIN
+  # - MT5_PASSWORD
+  # - MT5_SERVER
 
 # Monitoring Configuration
 monitoring:
@@ -108,8 +120,16 @@ monitoring:
 #   retention: 7  # Keep 7 days of backups
 
 # Notes:
-# 1. This requires a Windows-capable host since MT5 only runs on Windows
-# 2. Ensure MetaTrader 5 terminal is properly installed and licensed
-# 3. Set all secret values in Dokploy UI before deployment
-# 4. The AUTH_TOKEN should be a strong, randomly generated token
-# 5. Test the health endpoint after deployment: http://your-domain:8080/health
+# 1. IMPORTANT: This configuration uses Dockerfile.linux for Linux hosts (most common)
+# 2. For hybrid deployment (recommended):
+#    - Deploy this container on Linux (Dokploy)
+#    - Run Windows bridge server on a Windows machine (see HYBRID_DEPLOYMENT.md)
+#    - Set MT5_BRIDGE_URL to point to your Windows bridge server
+# 3. For Windows-only deployment:
+#    - Change dockerfile to 'Dockerfile' instead of 'Dockerfile.linux'
+#    - Requires Windows-capable Docker host
+#    - Set MT5_PATH, MT5_LOGIN, MT5_PASSWORD, MT5_SERVER directly
+# 4. Set all secret values in Dokploy UI before deployment
+# 5. The AUTH_TOKEN should be a strong, randomly generated token
+# 6. Test the health endpoint after deployment: http://your-domain:8080/health
+# 7. See HYBRID_DEPLOYMENT.md for complete setup guide

@@ -2,7 +2,22 @@ import { createServer } from "http";
 import { fileURLToPath } from "url";
 import { readFileSync, existsSync } from "fs";
 import path from "path";
-import { runTool } from "./mt5Bridge.js";
+
+// Auto-detect bridge mode based on MT5_BRIDGE_URL environment variable
+const useBridgeRemote = Boolean(process.env.MT5_BRIDGE_URL);
+let runTool, checkBridgeHealth;
+
+if (useBridgeRemote) {
+  console.log("[mt5-node] Using remote Windows MT5 bridge mode");
+  const remoteBridge = await import("./mt5BridgeRemote.js");
+  runTool = remoteBridge.runTool;
+  checkBridgeHealth = remoteBridge.checkBridgeHealth;
+} else {
+  console.log("[mt5-node] Using local Python bridge mode");
+  const localBridge = await import("./mt5Bridge.js");
+  runTool = localBridge.runTool;
+  checkBridgeHealth = null; // Not available in local mode
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -116,6 +131,29 @@ const server = createServer(async (req, res) => {
 
   if (req.method === "GET" && pathname === "/health/detailed") {
     try {
+      // If using remote bridge, check its health first
+      if (useBridgeRemote && checkBridgeHealth) {
+        const bridgeHealth = await checkBridgeHealth();
+        if (!bridgeHealth.available) {
+          jsonResponse(res, 503, {
+            status: "degraded",
+            healthy: false,
+            requireAuth,
+            uptimeSeconds: Math.floor(process.uptime()),
+            timestamp: new Date().toISOString(),
+            nodeVersion: process.version,
+            platform: process.platform,
+            bridgeMode: "remote",
+            bridgeUrl: process.env.MT5_BRIDGE_URL,
+            mt5: {
+              available: false,
+              error: bridgeHealth.error || "Bridge not available",
+            },
+          });
+          return;
+        }
+      }
+
       const version = await runTool({ tool: "get_version", params: {} });
       jsonResponse(res, 200, {
         status: "ok",
@@ -125,6 +163,8 @@ const server = createServer(async (req, res) => {
         timestamp: new Date().toISOString(),
         nodeVersion: process.version,
         platform: process.platform,
+        bridgeMode: useBridgeRemote ? "remote" : "local",
+        bridgeUrl: useBridgeRemote ? process.env.MT5_BRIDGE_URL : undefined,
         mt5: {
           available: true,
           version: version,
@@ -139,6 +179,8 @@ const server = createServer(async (req, res) => {
         timestamp: new Date().toISOString(),
         nodeVersion: process.version,
         platform: process.platform,
+        bridgeMode: useBridgeRemote ? "remote" : "local",
+        bridgeUrl: useBridgeRemote ? process.env.MT5_BRIDGE_URL : undefined,
         mt5: {
           available: false,
           error: error.message,

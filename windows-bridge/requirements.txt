@@ -1,0 +1,14 @@
+# Requirements for Windows MT5 Bridge Server
+# Install on Windows with: pip install -r requirements.txt
+
+# MetaTrader 5 Python API
+metatrader5==5.0.5370
+
+# Environment variable management
+python-dotenv>=1.1.1
+
+# Data manipulation
+pandas>=2.3.3
+
+# Additional utilities
+numpy>=1.26.0
